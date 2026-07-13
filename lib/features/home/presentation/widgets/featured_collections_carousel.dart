@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -44,7 +45,7 @@ class _CarouselContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 280,
+      height: 360,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(
@@ -78,9 +79,12 @@ class _CollectionCardState extends State<_CollectionCard> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = screenWidth < 600 ? screenWidth * 0.78 : 340.0;
+    final cardWidth = screenWidth < 600 ? screenWidth * 0.78 : 360.0;
 
     return GestureDetector(
+      onTap: () {
+        context.push('/search?query=${Uri.encodeComponent(widget.collection.title)}');
+      },
       onTapDown: (_) => setState(() => _isHovered = true),
       onTapUp: (_) => setState(() => _isHovered = false),
       onTapCancel: () => setState(() => _isHovered = false),
@@ -88,110 +92,70 @@ class _CollectionCardState extends State<_CollectionCard> {
         scale: _isHovered ? 1.02 : 1.0,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
-        child: SizedBox(
+        child: Container(
           width: cardWidth,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainer,
+            borderRadius: AppSpacing.borderRadiusLg,
+            boxShadow: _isHovered ? AppSpacing.elevationMd : AppSpacing.elevationSm,
+          ),
           child: ClipRRect(
-            borderRadius: AppSpacing.borderRadiusCard,
+            borderRadius: AppSpacing.borderRadiusLg,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Background image
-                ShimmerImage(
-                  imageUrl: widget.collection.imageUrl,
-                  fit: BoxFit.cover,
-                ),
-                // Multi-layer gradient overlay
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.primary.withValues(alpha: 0.05),
-                        AppColors.primary.withValues(alpha: 0.3),
-                        AppColors.primary.withValues(alpha: 0.85),
-                      ],
-                      stops: const [0.0, 0.5, 1.0],
-                    ),
+                // Background image with 60% opacity
+                Opacity(
+                  opacity: 0.6,
+                  child: ShimmerImage(
+                    imageUrl: widget.collection.imageUrl,
+                    fit: BoxFit.cover,
                   ),
                 ),
                 // Content
                 Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Promotional tag
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.tertiary.withValues(alpha: 0.9),
-                          borderRadius: AppSpacing.borderRadiusPill,
-                        ),
-                        child: Text(
-                          widget.collection.title.split(' ').first.toUpperCase(),
-                          style: AppTypography.badge.copyWith(
-                            color: AppColors.onPrimary,
-                            fontSize: 9,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       Text(
                         widget.collection.title,
-                        style: AppTypography.titleLg.copyWith(
-                          color: AppColors.onPrimary,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.headlineLg.copyWith(
+                          color: AppColors.primary,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w600,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         widget.collection.subtitle,
                         style: AppTypography.bodySm.copyWith(
-                          color: AppColors.onPrimary.withValues(alpha: 0.75),
+                          color: AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const Spacer(),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.onPrimary,
-                              borderRadius: AppSpacing.borderRadiusDefault,
-                            ),
-                            child: Text(
-                              widget.collection.actionLabel,
-                              style: AppTypography.labelSm.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: AppSpacing.borderRadiusPill,
+                        ),
+                        child: Text(
+                          widget.collection.actionLabel.toUpperCase(),
+                          style: AppTypography.labelSm.copyWith(
+                            color: AppColors.onPrimary,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: AppSpacing.borderRadiusMd,
-                            ),
-                            child: Icon(
-                              Icons.arrow_forward_ios,
-                              size: 14,
-                              color: AppColors.onPrimary.withValues(alpha: 0.8),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),

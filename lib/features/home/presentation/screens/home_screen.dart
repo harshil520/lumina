@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/animated_section.dart';
 import '../../../../core/widgets/ambient_gradient_background.dart';
-import '../../../../core/widgets/promo_widgets.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../widgets/category_grid.dart';
 import '../widgets/concierge_section.dart';
@@ -15,6 +17,7 @@ import '../widgets/home_bottom_nav_bar.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/trending_gemstones_grid.dart';
 import '../widgets/trust_banner.dart';
+import '../widgets/home_drawer.dart';
 
 /// Main home screen assembling all sections in a scrollable layout.
 ///
@@ -22,14 +25,35 @@ import '../widgets/trust_banner.dart';
 /// so loading/error states are scoped per section — a failed fetch in trending
 /// gemstones doesn't affect the category grid.
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    this.initialNavIndex = 0,
+    super.key,
+  });
+
+  final int initialNavIndex;
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _currentNavIndex = 0;
+  late int _currentNavIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentNavIndex = widget.initialNavIndex;
+  }
+
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialNavIndex != oldWidget.initialNavIndex) {
+      setState(() {
+        _currentNavIndex = widget.initialNavIndex;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +65,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        drawer: const HomeDrawer(),
         body: AmbientGradientBackground.home(
           child: SafeArea(
             bottom: false,
-            child: CustomScrollView(
+            child: _currentNavIndex == 4
+                ? _buildProfileView()
+                : CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               // ── App Bar ────────────────────────────────────────────
@@ -59,93 +86,73 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildIconButton(
-                        icon: Icons.menu_rounded,
-                        onTap: () {},
-                      ),
-                      // Logo with gold accent dot
-                      Row(
-                        children: [
-                          Text(
-                            'LUMINA',
-                            style: AppTypography.headlineMd.copyWith(
+                      Builder(
+                        builder: (context) {
+                          return GestureDetector(
+                            onTap: () => Scaffold.of(context).openDrawer(),
+                            child: const Icon(
+                              Icons.menu_rounded,
                               color: AppColors.primary,
-                              letterSpacing: 3,
-                              fontWeight: FontWeight.w800,
+                              size: 22,
                             ),
-                          ),
-                          const SizedBox(width: 2),
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: AppColors.tertiary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          Text(
-                            'GEMS',
-                            style: AppTypography.headlineMd.copyWith(
-                              color: AppColors.tertiary,
-                              letterSpacing: 3,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
+                          );
+                        }
                       ),
-                      _buildNotificationIcon(),
+                      Text(
+                        'LUMINA GEMS',
+                        style: GoogleFonts.playfairDisplay(
+                          color: AppColors.primary,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => context.push('/notifications'),
+                        child: const Icon(
+                          Icons.notifications_none_rounded,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
 
               // ── Search Bar ─────────────────────────────────────────
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSpacing.screenPaddingH,
-                    AppSpacing.md,
-                    AppSpacing.screenPaddingH,
-                    AppSpacing.sm,
-                  ),
-                  child: HomeSearchBar(),
-                ),
-              ),
-
-              // ── Quick Links Row (GIVA-style category chips) ────────
               SliverToBoxAdapter(
-                child: _buildQuickLinksRow(),
-              ),
-
-              // ── Hero Promo Banner ──────────────────────────────────
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSpacing.screenPaddingH,
-                    AppSpacing.sm,
-                    AppSpacing.screenPaddingH,
-                    0,
+                child: AnimatedSection(
+                  delay: const Duration(milliseconds: 100),
+                  child: const Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.screenPaddingH,
+                      AppSpacing.md,
+                      AppSpacing.screenPaddingH,
+                      AppSpacing.xs,
+                    ),
+                    child: HomeSearchBar(),
                   ),
-                  child: _HeroPromoBanner(),
                 ),
               ),
 
               // ── Category Grid Section ─────────────────────────────
               SliverToBoxAdapter(
-                child: _SectionTint(
+                child: AnimatedSection(
+                  delay: const Duration(milliseconds: 150),
                   child: Column(
                     children: [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
                           AppSpacing.screenPaddingH,
-                          AppSpacing.lg,
+                          AppSpacing.md,
                           AppSpacing.screenPaddingH,
-                          AppSpacing.sm,
+                          AppSpacing.xs,
                         ),
                         child: SectionHeader(
                           title: 'Shop by Category',
                           actionLabel: 'View All',
-                          onActionTap: () {},
+                          onActionTap: () => context.push('/categories'),
                         ),
                       ),
                       const CategoryGrid(),
@@ -156,30 +163,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
 
               // ── Trust Banner ───────────────────────────────────────
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  child: TrustBanner(),
+              SliverToBoxAdapter(
+                child: AnimatedSection(
+                  delay: const Duration(milliseconds: 200),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    child: TrustBanner(),
+                  ),
                 ),
               ),
 
               // ── Featured Collections Section ──────────────────────
               SliverToBoxAdapter(
-                child: _SectionTint(
-                  alternate: true,
+                child: AnimatedSection(
+                  delay: const Duration(milliseconds: 250),
                   child: Column(
                     children: [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
                           AppSpacing.screenPaddingH,
-                          AppSpacing.lg,
+                          AppSpacing.md,
                           AppSpacing.screenPaddingH,
-                          AppSpacing.sm,
+                          AppSpacing.xs,
                         ),
                         child: SectionHeader(
                           title: 'Featured Collections',
                           actionLabel: 'View All',
-                          onActionTap: () {},
+                          onActionTap: () => context.push('/featured-collections'),
                         ),
                       ),
                       const FeaturedCollectionsCarousel(),
@@ -191,50 +201,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               // ── Trending Now Section ──────────────────────────────
               SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.screenPaddingH,
-                        AppSpacing.lg,
-                        AppSpacing.screenPaddingH,
-                        AppSpacing.sm,
+                child: AnimatedSection(
+                  delay: const Duration(milliseconds: 300),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.screenPaddingH,
+                          AppSpacing.md,
+                          AppSpacing.screenPaddingH,
+                          AppSpacing.xs,
+                        ),
+                        child: SectionHeader(
+                          title: 'Trending Now',
+                          actionLabel: 'View All',
+                          onActionTap: () => context.push('/trending'),
+                        ),
                       ),
-                      child: SectionHeader(
-                        title: 'Trending Now',
-                        actionLabel: 'View All',
-                        onActionTap: () {},
-                      ),
-                    ),
-                    const TrendingGemstonesGrid(),
-                  ],
-                ),
-              ),
-
-              // ── Why Choose Us (GIVA-style value props) ─────────────
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSpacing.screenPaddingH,
-                    AppSpacing.lg,
-                    AppSpacing.screenPaddingH,
-                    0,
+                      const TrendingGemstonesGrid(),
+                    ],
                   ),
-                  child: _ValuePropsRow(),
                 ),
               ),
 
               // ── Concierge & Newsletter ─────────────────────────────
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.only(top: AppSpacing.lg),
-                  child: ConciergeSection(),
+              SliverToBoxAdapter(
+                child: AnimatedSection(
+                  delay: const Duration(milliseconds: 350),
+                  child: const Padding(
+                    padding: EdgeInsets.only(top: AppSpacing.md),
+                    child: ConciergeSection(),
+                  ),
                 ),
               ),
 
-              // ── Bottom padding for nav bar ─────────────────────────
+              // ── Bottom padding for nav bar ───────────────────────────────
               const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
+                child: SizedBox(height: 80),
               ),
             ],
           ),
@@ -243,375 +246,154 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         bottomNavigationBar: HomeBottomNavBar(
           currentIndex: _currentNavIndex,
           onTap: (index) {
-            setState(() {
-              _currentNavIndex = index;
-            });
+            if (index == 1) {
+              // Search tab - navigate to search screen
+              context.push('/search');
+            } else if (index == 2) {
+              // Cart tab - navigate to cart screen
+              context.push('/cart');
+            } else if (index == 3) {
+              // Sell tab - navigate to seller dashboard
+              context.go('/seller-dashboard');
+            } else {
+              setState(() {
+                _currentNavIndex = index;
+              });
+            }
           },
         ),
       ),
     );
   }
 
-  Widget _buildIconButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLow,
-          borderRadius: AppSpacing.borderRadiusMd,
-        ),
-        child: Icon(
-          icon,
-          color: AppColors.primary,
-          size: 22,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNotificationIcon() {
-    return GestureDetector(
-      child: Stack(
+  Widget _buildProfileView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLow,
-              borderRadius: AppSpacing.borderRadiusMd,
-            ),
-            child: const Icon(
-              Icons.notifications_outlined,
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'My Profile',
+            style: AppTypography.headlineLg.copyWith(
               color: AppColors.primary,
-              size: 22,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          Positioned(
-            top: 6,
-            right: 6,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: AppColors.error,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.surface,
-                  width: 2,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickLinksRow() {
-    final links = [
-      ('New Arrivals', Icons.auto_awesome),
-      ('Bestsellers', Icons.local_fire_department_outlined),
-      ('Under \$5K', Icons.sell_outlined),
-      ('GIA Certified', Icons.verified_outlined),
-    ];
-
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.screenPaddingH,
-        ),
-        itemCount: links.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: index == 0
-                  ? AppColors.primary
-                  : AppColors.surfaceContainerLow,
-              borderRadius: AppSpacing.borderRadiusPill,
+              color: AppColors.surface,
+              borderRadius: AppSpacing.borderRadiusCard,
               border: Border.all(
-                color: index == 0
-                    ? AppColors.primary
-                    : AppColors.outlineVariant.withValues(alpha: 0.4),
+                color: AppColors.outlineVariant.withValues(alpha: 0.3),
               ),
+              boxShadow: AppSpacing.elevationSm,
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  links[index].$2,
-                  size: 14,
-                  color: index == 0
-                      ? AppColors.onPrimary
-                      : AppColors.onSurfaceVariant,
+                ClipOval(
+                  child: Image.network(
+                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  links[index].$1,
-                  style: AppTypography.chip.copyWith(
-                    color: index == 0
-                        ? AppColors.onPrimary
-                        : AppColors.onSurfaceVariant,
-                    fontWeight:
-                        index == 0 ? FontWeight.w600 : FontWeight.w500,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Alexander Sterling',
+                        style: AppTypography.titleLg.copyWith(
+                          color: AppColors.primary,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'alexander@sterlinggems.com',
+                        style: AppTypography.bodySm.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Hero promotional banner shown prominently below search.
-class _HeroPromoBanner extends StatelessWidget {
-  const _HeroPromoBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withValues(alpha: 0.9),
-            const Color(0xFF133959),
-          ],
-        ),
-        borderRadius: AppSpacing.borderRadiusLg,
-        boxShadow: AppSpacing.elevationPrimary,
-      ),
-      child: Stack(
-        children: [
-          // Decorative elements
-          Positioned(
-            top: -20,
-            right: -10,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.tertiary.withValues(alpha: 0.15),
-              ),
-            ),
           ),
-          Positioned(
-            bottom: -15,
-            right: 40,
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const PromoBadge(
-                    label: 'Limited',
-                    backgroundColor: AppColors.tertiaryContainer,
-                    foregroundColor: AppColors.onTertiaryContainer,
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: ListView(
+              physics: const BouncingScrollPhysics(),
+              children: [
+                _buildProfileItem(Icons.shopping_bag_outlined, 'Recent Orders', 'Track and manage your orders'),
+                _buildProfileItem(Icons.location_on_outlined, 'Saved Addresses', 'Manage delivery locations'),
+                _buildProfileItem(Icons.payment_outlined, 'Payment Methods', 'Manage cards and billing'),
+                _buildProfileItem(Icons.favorite_border, 'Wishlist', 'View your saved items'),
+                _buildProfileItem(Icons.help_outline, 'Help & Support', 'Get assistance and contact us'),
+                const SizedBox(height: 24),
+                GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: AppSpacing.borderRadiusPill,
-                    ),
-                    child: Text(
-                      'ENDS IN 2H 45M',
-                      style: AppTypography.badge.copyWith(
-                        color: AppColors.onPrimary,
-                        fontSize: 9,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Certified Gemstones',
-                style: AppTypography.headlineMd.copyWith(
-                  color: AppColors.onPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Up to 40% Off',
-                style: AppTypography.headlineMd.copyWith(
-                  color: AppColors.tertiary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'GIA & IGI certified diamonds with full provenance documentation',
-                style: AppTypography.bodySm.copyWith(
-                  color: AppColors.onPrimary.withValues(alpha: 0.7),
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.onPrimary,
+                      border: Border.all(color: AppColors.error),
                       borderRadius: AppSpacing.borderRadiusDefault,
                     ),
+                    alignment: Alignment.center,
                     child: Text(
-                      'SHOP NOW',
-                      style: AppTypography.labelSm.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      'LOGOUT',
+                      style: AppTypography.labelMd.copyWith(color: AppColors.error),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Explore Deals',
-                    style: AppTypography.labelSm.copyWith(
-                      color: AppColors.onPrimary.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 14,
-                    color: AppColors.onPrimary.withValues(alpha: 0.8),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-/// Value proposition row (GIVA-style trust indicators).
-class _ValuePropsRow extends StatelessWidget {
-  const _ValuePropsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    final props = [
-      (Icons.verified_outlined, 'Certified', 'GIA & IGI'),
-      (Icons.local_shipping_outlined, 'Free Shipping', 'Pan India'),
-      (Icons.lock_outline, 'Secure', 'Payment'),
-      (Icons.autorenew, 'Easy', 'Returns'),
-    ];
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: props.map((prop) {
-        return Expanded(
-          child: Container(
-            margin: EdgeInsets.only(
-              right: prop != props.last ? 8 : 0,
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLow,
-              borderRadius: AppSpacing.borderRadiusMd,
-              border: Border.all(
-                color: AppColors.outlineVariant.withValues(alpha: 0.2),
-              ),
-            ),
+  Widget _buildProfileItem(IconData icon, String title, String subtitle) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppSpacing.borderRadiusCard,
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primary, size: 22),
+          const SizedBox(width: 16),
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  prop.$1,
-                  size: 20,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(height: 6),
                 Text(
-                  prop.$2,
-                  style: AppTypography.badge.copyWith(
+                  title,
+                  style: AppTypography.bodyMd.copyWith(
+                    fontWeight: FontWeight.bold,
                     color: AppColors.primary,
-                    fontSize: 10,
                   ),
-                  textAlign: TextAlign.center,
                 ),
                 Text(
-                  prop.$3,
-                  style: AppTypography.overline.copyWith(
-                    color: AppColors.outline,
-                    fontSize: 9,
-                  ),
-                  textAlign: TextAlign.center,
+                  subtitle,
+                  style: AppTypography.bodySm.copyWith(color: AppColors.outline),
                 ),
               ],
             ),
           ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-/// Soft tinted background wrapper for alternating sections.
-///
-/// Creates the warm, barely-there background washes GIVA uses to
-/// visually separate content zones without harsh borders.
-class _SectionTint extends StatelessWidget {
-  const _SectionTint({required this.child, this.alternate = false});
-
-  final Widget child;
-  final bool alternate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: alternate
-              ? const [
-                  Color(0x00000000),
-                  Color(0x08FBF3DB), // barely-there champagne
-                  Color(0x0AFBF3DB),
-                  Color(0x00000000),
-                ]
-              : const [
-                  Color(0x00000000),
-                  Color(0x06F0F5F9), // barely-there cool slate
-                  Color(0x08F0F5F9),
-                  Color(0x00000000),
-                ],
-        ),
+          const Icon(Icons.arrow_forward_ios, color: AppColors.outline, size: 12),
+        ],
       ),
-      child: child,
     );
   }
 }

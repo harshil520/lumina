@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -18,93 +19,56 @@ class SellerProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppSpacing.borderRadiusCard,
+        color: AppColors.surfaceContainerLow,
+        borderRadius: AppSpacing.borderRadiusXl,
         border: Border.all(
-          color: AppColors.outlineVariant.withValues(alpha: 0.3),
+          color: AppColors.outlineVariant.withValues(alpha: 0.15),
         ),
-        boxShadow: AppSpacing.elevationSm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLow,
-                  borderRadius: AppSpacing.borderRadiusPill,
-                ),
-                child: Text(
-                  'LISTED BY',
-                  style: AppTypography.overline.copyWith(
-                    color: AppColors.outline,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.secondaryContainer,
-                  borderRadius: AppSpacing.borderRadiusPill,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.verified,
-                      size: 10,
-                      color: AppColors.secondary,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      'VERIFIED',
-                      style: AppTypography.badge.copyWith(
-                        color: AppColors.onSecondaryContainer,
-                        fontSize: 9,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Text(
+            'LISTED BY',
+            style: AppTypography.labelSm.copyWith(
+              color: AppColors.outline,
+              fontSize: 12,
+              letterSpacing: 0.8,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              // Avatar with ring
+              // Avatar
               Container(
-                padding: const EdgeInsets.all(3),
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: AppColors.tertiaryGradient,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: ShimmerImage(
-                      imageUrl: seller.avatarUrl,
-                      fit: BoxFit.cover,
-                    ),
+                  border: Border.all(
+                    color: AppColors.outlineVariant.withValues(alpha: 0.4),
                   ),
                 ),
+                clipBehavior: Clip.antiAlias,
+                child: ShimmerImage(
+                  imageUrl: seller.avatarUrl,
+                  fit: BoxFit.cover,
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       seller.name,
-                      style: AppTypography.bodyMd.copyWith(
+                      style: AppTypography.titleLg.copyWith(
                         color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -112,25 +76,17 @@ class SellerProfileCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        ...List.generate(5, (index) {
-                          return Icon(
-                            index < seller.rating.round()
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            size: 14,
-                            color: AppColors.accentAmber,
-                          );
-                        }),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            '${seller.rating} (${seller.reviewCount} reviews)',
-                            style: AppTypography.dataMono.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                              fontSize: 11,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 16,
+                          color: AppColors.tertiary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${seller.rating} (${seller.reviewCount} reviews)',
+                          style: AppTypography.dataMono.copyWith(
+                            color: AppColors.outline,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -140,52 +96,35 @@ class SellerProfileCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLow,
-              borderRadius: AppSpacing.borderRadiusMd,
-            ),
-            child: Text(
-              '"${seller.tagline}"',
-              style: AppTypography.bodySm.copyWith(
-                color: AppColors.onSurfaceVariant,
-                fontStyle: FontStyle.italic,
-                height: 1.5,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 24),
+          Text(
+            '"${seller.tagline}"',
+            style: AppTypography.bodySm.copyWith(
+              color: AppColors.onSurfaceVariant,
+              fontStyle: FontStyle.italic,
+              height: 1.5,
             ),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
+          const SizedBox(height: 24),
+          GestureDetector(
+            onTap: () {
+              context.push('/seller-listings?name=${Uri.encodeComponent(seller.name)}');
+            },
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              height: 48,
+              width: double.infinity,
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.primary, width: 1.5),
+                border: Border.all(color: AppColors.primary, width: 1),
                 borderRadius: AppSpacing.borderRadiusDefault,
               ),
               alignment: Alignment.center,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'VIEW ALL LISTINGS',
-                    style: AppTypography.labelSm.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 12,
-                    color: AppColors.primary,
-                  ),
-                ],
+              child: Text(
+                'VIEW ALL LISTINGS',
+                style: AppTypography.labelSm.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                ),
               ),
             ),
           ),

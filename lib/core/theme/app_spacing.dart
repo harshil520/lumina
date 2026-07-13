@@ -12,15 +12,15 @@ class AppSpacing {
 
   // ── Spacing (8px grid) ────────────────────────────────────────────────
   static const double unit = 8;
-  static const double xs = 4;
-  static const double sm = 12;
-  static const double md = 24;
-  static const double lg = 48;
-  static const double xl = 72;
-  static const double gutter = 32;
+  static const double xs = 2;
+  static const double sm = 8;
+  static const double md = 16;
+  static const double lg = 24;
+  static const double xl = 36;
+  static const double gutter = 20;
 
   /// Horizontal padding for mobile screens.
-  static const double screenPaddingH = 20;
+  static const double screenPaddingH = 12;
 
   // ── Border Radius ("Chiseled Precision" — tight, industrial) ──────────
   static const double radiusSm = 2;

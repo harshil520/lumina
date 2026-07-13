@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -33,57 +34,21 @@ class _ConciergeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppSpacing.borderRadiusCard,
-        border: Border.all(
-          color: AppColors.outlineVariant.withValues(alpha: 0.3),
-        ),
-        boxShadow: AppSpacing.elevationSm,
+        color: AppColors.surfaceContainerHighest,
+        borderRadius: AppSpacing.borderRadiusLg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: AppSpacing.borderRadiusMd,
-                ),
-                child: const Icon(
-                  Icons.diamond_outlined,
-                  color: AppColors.onPrimary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Private Concierge',
-                      style: AppTypography.titleLg.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Personal gemstone advisory',
-                      style: AppTypography.overline.copyWith(
-                        color: AppColors.outline,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Text(
+            'Private Concierge',
+            style: AppTypography.headlineLg.copyWith(
+              color: AppColors.primary,
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -91,36 +56,27 @@ class _ConciergeCard extends StatelessWidget {
             style: AppTypography.bodyMd.copyWith(
               color: AppColors.onSurfaceVariant,
             ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 12,
-            ),
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.primary, width: 1.5),
-              borderRadius: AppSpacing.borderRadiusDefault,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'BOOK CONSULTATION',
-                  style: AppTypography.labelSm.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 12,
+          const SizedBox(height: 24),
+          GestureDetector(
+            onTap: () => context.push('/concierge'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
+              ),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.primary, width: 1.5),
+                borderRadius: AppSpacing.borderRadiusPill,
+              ),
+              child: Text(
+                'BOOK CONSULTATION',
+                style: AppTypography.labelSm.copyWith(
                   color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -134,133 +90,72 @@ class _NewsletterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withValues(alpha: 0.95),
-            const Color(0xFF133959),
-          ],
-        ),
-        borderRadius: AppSpacing.borderRadiusCard,
-        boxShadow: AppSpacing.elevationPrimary,
+        color: AppColors.primary,
+        borderRadius: AppSpacing.borderRadiusLg,
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Decorative element
-          Positioned(
-            top: -20,
-            right: -10,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
+          Text(
+            'Exclusive Access',
+            style: AppTypography.headlineLg.copyWith(
+              color: AppColors.onPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 12),
+          Text(
+            'Be the first to know about new arrivals and rare investment opportunities.',
+            style: AppTypography.bodyMd.copyWith(
+              color: AppColors.onPrimary.withValues(alpha: 0.85),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.tertiary.withValues(alpha: 0.2),
-                      borderRadius: AppSpacing.borderRadiusMd,
-                    ),
-                    child: const Icon(
-                      Icons.mail_outline,
-                      color: AppColors.tertiary,
-                      size: 22,
+              Expanded(
+                child: Container(
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: AppSpacing.borderRadiusPill,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Exclusive Access',
-                          style: AppTypography.titleLg.copyWith(
-                            color: AppColors.onPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'VIP early access & rare finds',
-                          style: AppTypography.overline.copyWith(
-                            color: AppColors.onPrimary.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Be the first to know about new arrivals and rare investment opportunities.',
-                style: AppTypography.bodySm.copyWith(
-                  color: AppColors.onPrimary.withValues(alpha: 0.75),
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 16),
-              Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: AppSpacing.borderRadiusDefault,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.15),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 16),
-                    Icon(
-                      Icons.email_outlined,
-                      size: 18,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Email address',
+                    style: AppTypography.bodyMd.copyWith(
                       color: Colors.white.withValues(alpha: 0.4),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Enter your email',
-                        style: AppTypography.bodyMd.copyWith(
-                          color: Colors.white.withValues(alpha: 0.4),
-                        ),
-                      ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () {},
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: AppSpacing.borderRadiusPill,
+                  ),
+                  child: Text(
+                    'JOIN',
+                    style: AppTypography.labelSm.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
                     ),
-                    Container(
-                      margin: const EdgeInsets.all(4),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.tertiaryGradient,
-                        borderRadius: AppSpacing.borderRadiusSm,
-                      ),
-                      child: Text(
-                        'JOIN',
-                        style: AppTypography.labelSm.copyWith(
-                          color: AppColors.onPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],

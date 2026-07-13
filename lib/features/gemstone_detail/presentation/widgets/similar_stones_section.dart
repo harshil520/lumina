@@ -21,14 +21,14 @@ class SimilarStonesSection extends StatelessWidget {
     if (stones.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 260,
+      height: 310,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.screenPaddingH,
         ),
         itemCount: stones.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => const SizedBox(width: 16),
         itemBuilder: (context, index) => _SimilarStoneCard(
           stone: stones[index],
         ),
@@ -66,63 +66,46 @@ class _SimilarStoneCardState extends State<_SimilarStoneCard> {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
         child: SizedBox(
-          width: 170,
+          width: 180,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: AppSpacing.borderRadiusMd,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      ShimmerImage(
-                        imageUrl: widget.stone.imageUrl,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                      ),
-                      // Certification badge
-                      Positioned(
-                        top: 6,
-                        left: 6,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.secondaryContainer,
-                            borderRadius: AppSpacing.borderRadiusPill,
-                          ),
-                          child: Text(
-                            widget.stone.certificationBadge,
-                            style: AppTypography.badge.copyWith(
-                              color: AppColors.onSecondaryContainer,
-                              fontSize: 8,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+              AspectRatio(
+                aspectRatio: 0.8,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLowest,
+                    borderRadius: AppSpacing.borderRadiusCard,
+                    border: Border.all(
+                      color: AppColors.outlineVariant.withValues(alpha: 0.15),
+                    ),
+                    boxShadow: AppSpacing.elevationSm,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: ShimmerImage(
+                    imageUrl: widget.stone.imageUrl,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 widget.stone.name,
-                style: AppTypography.bodyMd.copyWith(
+                style: AppTypography.titleLg.copyWith(
                   color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
-                '${widget.stone.weight} · ${widget.stone.cut}',
-                style: AppTypography.overline.copyWith(
+                widget.stone.certificationBadge,
+                style: AppTypography.labelSm.copyWith(
                   color: AppColors.outline,
+                  fontSize: 12,
+                  letterSpacing: 0.5,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -130,8 +113,10 @@ class _SimilarStoneCardState extends State<_SimilarStoneCard> {
               const SizedBox(height: 4),
               Text(
                 '\$${widget.stone.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
-                style: AppTypography.priceSm.copyWith(
+                style: AppTypography.dataMono.copyWith(
                   color: AppColors.primary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],

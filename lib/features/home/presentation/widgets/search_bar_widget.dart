@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -20,11 +21,17 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => setState(() => _isFocused = true),
+      onTap: () {
+        setState(() => _isFocused = true);
+        context.push('/search');
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) setState(() => _isFocused = false);
+        });
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        height: 56,
+        height: 64,
         decoration: BoxDecoration(
           color: _isFocused
               ? AppColors.surface
@@ -40,42 +47,23 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
         ),
         child: Row(
           children: [
-            const SizedBox(width: 18),
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                borderRadius: AppSpacing.borderRadiusMd,
-              ),
-              child: const Icon(
-                Icons.search,
-                color: AppColors.primary,
-                size: 18,
-              ),
+            const SizedBox(width: 24),
+            const Icon(
+              Icons.search,
+              color: AppColors.outline,
+              size: 24,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
               child: Text(
-                'Search diamonds, gemstones...',
+                'Search for rare emeralds, lab diamonds...',
                 style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.outline.withValues(alpha: 0.5),
+                  color: AppColors.outline.withValues(alpha: 0.6),
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
-                borderRadius: AppSpacing.borderRadiusMd,
-              ),
-              child: const Icon(
-                Icons.tune,
-                color: AppColors.onPrimary,
-                size: 16,
-              ),
-            ),
+            const SizedBox(width: 24),
           ],
         ),
       ),

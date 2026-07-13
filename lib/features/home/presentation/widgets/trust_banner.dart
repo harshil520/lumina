@@ -62,63 +62,28 @@ class TrustBanner extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.tertiary.withValues(alpha: 0.2),
-                      borderRadius: AppSpacing.borderRadiusMd,
-                    ),
-                    child: const Icon(
-                      Icons.shield_outlined,
-                      color: AppColors.tertiary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Investment-Grade Assurance',
-                      style: AppTypography.titleLg.copyWith(
-                        color: AppColors.onPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
               Text(
-                'Every stone is meticulously graded by GIA or IGI. Full digital certification history available for every purchase.',
-                style: AppTypography.bodySm.copyWith(
-                  color: AppColors.onPrimary.withValues(alpha: 0.75),
+                'Investment-Grade Assurance',
+                style: AppTypography.headlineLg.copyWith(
+                  color: AppColors.onPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
                 ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Every stone at Lumina is meticulously graded by GIA or IGI. Full digital certification history available for every purchase.',
+                style: AppTypography.bodyMd.copyWith(
+                  color: AppColors.onPrimary.withValues(alpha: 0.8),
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               Wrap(
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.unit,
-                children: [
-                  _CertBadge(
-                    icon: Icons.verified,
-                    label: 'GIA CERTIFIED',
-                    color: AppColors.secondary,
-                  ),
-                  _CertBadge(
-                    icon: Icons.verified_outlined,
-                    label: 'IGI GRADED',
-                    color: AppColors.tertiary,
-                  ),
-                  _CertBadge(
-                    icon: Icons.lock_outline,
-                    label: 'SECURE',
-                    color: AppColors.onPrimary,
-                  ),
+                children: const [
+                  _CertBadge(label: 'GIA CERTIFIED'),
+                  _CertBadge(label: 'IGI GRADED'),
                 ],
               ),
             ],
@@ -130,44 +95,29 @@ class TrustBanner extends StatelessWidget {
 }
 
 class _CertBadge extends StatelessWidget {
-  const _CertBadge({
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
+  const _CertBadge({required this.label});
 
   final String label;
-  final IconData icon;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: AppSpacing.borderRadiusPill,
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
+          color: Colors.white.withValues(alpha: 0.25),
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 12,
-            color: color,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: AppTypography.labelSm.copyWith(
-              color: AppColors.onPrimary,
-              fontSize: 10,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: AppTypography.labelSm.copyWith(
+          color: AppColors.onPrimary,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.0,
+        ),
       ),
     );
   }

@@ -31,9 +31,16 @@ class _GemstoneImageGalleryState extends State<GemstoneImageGallery> {
       children: [
         // Hero image
         AspectRatio(
-          aspectRatio: 1,
-          child: ClipRRect(
-            borderRadius: AppSpacing.borderRadiusLg,
+          aspectRatio: 1.0,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLow,
+              borderRadius: AppSpacing.borderRadiusLg,
+              border: Border.all(
+                color: AppColors.outlineVariant.withValues(alpha: 0.15),
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -42,25 +49,6 @@ class _GemstoneImageGalleryState extends State<GemstoneImageGallery> {
                       ? widget.imageUrls[_selectedIndex]
                       : '',
                   fit: BoxFit.cover,
-                ),
-                // Bottom gradient for depth
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.3),
-                        ],
-                      ),
-                    ),
-                  ),
                 ),
                 // Certification badge
                 Positioned(
@@ -72,36 +60,35 @@ class _GemstoneImageGalleryState extends State<GemstoneImageGallery> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.secondaryContainer.withValues(alpha: 0.95),
+                      color: AppColors.tertiaryContainer.withValues(alpha: 0.15),
                       borderRadius: AppSpacing.borderRadiusPill,
-                      boxShadow: AppSpacing.elevationSm,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.verified,
-                          size: 14,
-                          color: AppColors.secondary,
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.tertiary,
+                          ),
                         ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            widget.certificationBadge,
-                            style: AppTypography.labelSm.copyWith(
-                              color: AppColors.onSecondaryContainer,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.certificationBadge.toUpperCase(),
+                          style: AppTypography.labelSm.copyWith(
+                            color: AppColors.tertiary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                // 360 View button
+                // 360 View Button
                 Positioned(
                   bottom: 16,
                   right: 16,
@@ -111,58 +98,32 @@ class _GemstoneImageGalleryState extends State<GemstoneImageGallery> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surface.withValues(alpha: 0.92),
+                      color: AppColors.surface.withValues(alpha: 0.9),
                       borderRadius: AppSpacing.borderRadiusPill,
-                      boxShadow: AppSpacing.elevationMd,
+                      border: Border.all(
+                        color: AppColors.outlineVariant.withValues(alpha: 0.3),
+                      ),
+                      boxShadow: AppSpacing.elevationSm,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.threesixty,
-                            size: 12,
-                            color: AppColors.onPrimary,
-                          ),
+                        const Icon(
+                          Icons.rotate_right_rounded,
+                          size: 16,
+                          color: AppColors.primary,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Text(
-                          '360° VIEW',
+                          'Interactive 360° View',
                           style: AppTypography.labelSm.copyWith(
                             color: AppColors.primary,
                             fontSize: 10,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ),
-                // Image counter
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      borderRadius: AppSpacing.borderRadiusPill,
-                    ),
-                    child: Text(
-                      '${_selectedIndex + 1}/${widget.imageUrls.length}',
-                      style: AppTypography.badge.copyWith(
-                        color: Colors.white,
-                        fontSize: 10,
-                      ),
                     ),
                   ),
                 ),
@@ -174,35 +135,63 @@ class _GemstoneImageGalleryState extends State<GemstoneImageGallery> {
         // Thumbnails
         SizedBox(
           height: 72,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: widget.imageUrls.length,
-            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.unit),
-            itemBuilder: (context, index) {
+          child: Row(
+            children: List.generate(widget.imageUrls.length, (index) {
               final isSelected = index == _selectedIndex;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedIndex = index),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 72,
-                  decoration: BoxDecoration(
-                    borderRadius: AppSpacing.borderRadiusMd,
-                    border: Border.all(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.outlineVariant.withValues(alpha: 0.3),
-                      width: isSelected ? 2.5 : 1,
-                    ),
-                    boxShadow: isSelected ? AppSpacing.elevationGlow : null,
+              final isVideoPlaceholder = index == widget.imageUrls.length - 1;
+
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: index == widget.imageUrls.length - 1 ? 0 : AppSpacing.unit,
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: ShimmerImage(
-                    imageUrl: widget.imageUrls[index],
-                    fit: BoxFit.cover,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (!isVideoPlaceholder) {
+                        setState(() => _selectedIndex = index);
+                      } else {
+                        // Action for video placeholder
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Playing 3D Video render...'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      }
+                    },
+                    child: AspectRatio(
+                      aspectRatio: 1.0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isVideoPlaceholder
+                              ? AppColors.surfaceContainer
+                              : Colors.transparent,
+                          borderRadius: AppSpacing.borderRadiusMd,
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.outlineVariant.withValues(alpha: 0.3),
+                            width: isSelected ? 2.0 : 1.0,
+                          ),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        alignment: Alignment.center,
+                        child: isVideoPlaceholder
+                            ? const Icon(
+                                Icons.play_circle_outline_rounded,
+                                color: AppColors.outline,
+                                size: 28,
+                              )
+                            : ShimmerImage(
+                                imageUrl: widget.imageUrls[index],
+                                fit: BoxFit.cover,
+                              ),
+                      ),
+                    ),
                   ),
                 ),
               );
-            },
+            }),
           ),
         ),
       ],

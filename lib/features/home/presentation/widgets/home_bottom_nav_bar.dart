@@ -21,6 +21,7 @@ class HomeBottomNavBar extends StatelessWidget {
   static const _items = [
     _NavItem(icon: Icons.home_rounded, activeIcon: Icons.home_rounded, label: 'Home'),
     _NavItem(icon: Icons.search, activeIcon: Icons.search, label: 'Search'),
+    _NavItem(icon: Icons.shopping_bag_outlined, activeIcon: Icons.shopping_bag, label: 'Cart'),
     _NavItem(icon: Icons.diamond_outlined, activeIcon: Icons.diamond, label: 'Sell'),
     _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
   ];

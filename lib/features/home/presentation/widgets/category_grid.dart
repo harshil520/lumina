@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -44,44 +45,51 @@ class _CategoryGridContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     if (screenWidth < 600) {
-      return SizedBox(
-        height: 200,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenPaddingH,
-          ),
-          itemCount: categories.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 12),
-          itemBuilder: (context, index) => SizedBox(
-            width: screenWidth * 0.72,
-            child: _CategoryCard(
-              category: categories[index],
-              index: index,
-            ),
-          ),
+      return Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPaddingH,
+        ),
+        child: Column(
+          children: categories.asMap().entries.map((entry) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: entry.key < categories.length - 1 ? 16 : 0,
+              ),
+              child: SizedBox(
+                height: 180,
+                width: double.infinity,
+                child: _CategoryCard(
+                  category: entry.value,
+                  index: entry.key,
+                ),
+              ),
+            );
+          }).toList(),
         ),
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenPaddingH,
-      ),
-      child: Row(
-        children: categories.asMap().entries.map((entry) {
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                right: entry.key < categories.length - 1 ? 12 : 0,
+    return SizedBox(
+      height: 240,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPaddingH,
+        ),
+        child: Row(
+          children: categories.asMap().entries.map((entry) {
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: entry.key < categories.length - 1 ? 16 : 0,
+                ),
+                child: _CategoryCard(
+                  category: entry.value,
+                  index: entry.key,
+                ),
               ),
-              child: _CategoryCard(
-                category: entry.value,
-                index: entry.key,
-              ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -103,6 +111,9 @@ class _CategoryCardState extends State<_CategoryCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onTap: () {
+        context.push('/search?category=${Uri.encodeComponent(widget.category.name)}');
+      },
       onTapDown: (_) => setState(() => _isHovered = true),
       onTapUp: (_) => setState(() => _isHovered = false),
       onTapCancel: () => setState(() => _isHovered = false),
@@ -113,13 +124,13 @@ class _CategoryCardState extends State<_CategoryCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            borderRadius: AppSpacing.borderRadiusCard,
+            borderRadius: AppSpacing.borderRadiusLg,
             boxShadow: _isHovered
                 ? AppSpacing.elevationMd
                 : AppSpacing.elevationSm,
           ),
           child: ClipRRect(
-            borderRadius: AppSpacing.borderRadiusCard,
+            borderRadius: AppSpacing.borderRadiusLg,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -127,7 +138,7 @@ class _CategoryCardState extends State<_CategoryCard> {
                   imageUrl: widget.category.imageUrl,
                   fit: BoxFit.cover,
                 ),
-                // Gradient overlay — richer, more layered
+                // Gradient overlay
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -135,88 +146,41 @@ class _CategoryCardState extends State<_CategoryCard> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.transparent,
-                        AppColors.primary.withValues(alpha: 0.6),
-                        AppColors.primary.withValues(alpha: 0.92),
+                        AppColors.primary.withValues(alpha: 0.1),
+                        AppColors.primary.withValues(alpha: 0.8),
                       ],
-                      stops: const [0.0, 0.35, 0.7, 1.0],
+                      stops: const [0.0, 0.4, 1.0],
                     ),
                   ),
                 ),
                 // Labels
                 Positioned(
-                  left: 16,
-                  bottom: 16,
-                  right: 16,
+                  left: 20,
+                  bottom: 20,
+                  right: 20,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.tertiary.withValues(alpha: 0.9),
-                          borderRadius: AppSpacing.borderRadiusPill,
-                        ),
-                        child: Text(
-                          widget.category.subtitle.toUpperCase(),
-                          style: AppTypography.badge.copyWith(
-                            color: AppColors.onPrimary,
-                            fontSize: 9,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        widget.category.subtitle.toUpperCase(),
+                        style: AppTypography.overline.copyWith(
+                          color: AppColors.onPrimary.withValues(alpha: 0.8),
+                          letterSpacing: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
                         widget.category.name,
-                        style: AppTypography.titleLg.copyWith(
+                        style: AppTypography.headlineLg.copyWith(
                           color: AppColors.onPrimary,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            'Explore',
-                            style: AppTypography.labelSm.copyWith(
-                              color: AppColors.onPrimary.withValues(alpha: 0.7),
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 10,
-                            color: AppColors.onPrimary.withValues(alpha: 0.7),
-                          ),
-                        ],
-                      ),
                     ],
-                  ),
-                ),
-                // Top-right accent dot
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.tertiary,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        width: 1.5,
-                      ),
-                    ),
                   ),
                 ),
               ],

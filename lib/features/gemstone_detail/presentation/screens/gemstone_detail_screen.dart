@@ -1,21 +1,26 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../seller_dashboard/application/seller_dashboard_providers.dart';
+import '../../../seller_dashboard/presentation/widgets/listing_form_modal.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/ambient_gradient_background.dart';
-import '../../../../core/widgets/promo_widgets.dart';
-import '../../../../core/widgets/section_header.dart';
 import '../../../home/domain/models/gemstone_summary.dart';
 import '../../application/gemstone_detail_providers.dart';
+import '../../../cart/application/cart_provider.dart';
 import '../../domain/models/gemstone_detail.dart';
 import '../widgets/four_c_grid.dart';
 import '../widgets/gemstone_image_gallery.dart';
 import '../widgets/seller_profile_card.dart';
 import '../widgets/similar_stones_section.dart';
 import '../widgets/technical_details_section.dart';
+import '../widgets/comments_bottom_sheet.dart';
 
 /// Full gemstone detail screen with image gallery, 4C bento grid,
 /// technical specs, seller profile, and similar stones.
@@ -23,9 +28,10 @@ import '../widgets/technical_details_section.dart';
 /// Enhanced with GIVA-inspired gradient overlays, interactive elements,
 /// and premium visual hierarchy.
 class GemstoneDetailScreen extends ConsumerWidget {
-  const GemstoneDetailScreen({super.key, required this.gemstoneId});
+  const GemstoneDetailScreen({super.key, required this.gemstoneId, this.isSellerView = false});
 
   final String gemstoneId;
+  final bool isSellerView;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,577 +46,781 @@ class GemstoneDetailScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         body: AmbientGradientBackground.detail(
           child: detailAsync.when(
-          data: (detail) => _DetailContent(detail: detail),
-          loading: () => const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primary,
-              strokeWidth: 2,
+            data: (detail) => _DetailContent(detail: detail, isSellerView: isSellerView),
+            loading: () => const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 2,
+              ),
             ),
-          ),
-          error: (error, _) => Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.errorContainer,
-                    shape: BoxShape.circle,
+            error: (error, _) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.error_outline,
+                      color: AppColors.error,
+                      size: 40,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.error_outline,
-                    color: AppColors.error,
-                    size: 40,
+                  const SizedBox(height: 20),
+                  Text(
+                    'Failed to load gemstone details',
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Failed to load gemstone details',
-                  style: AppTypography.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 6),
+                  Text(
+                    'Please check your connection and try again',
+                    style: AppTypography.bodySm.copyWith(
+                      color: AppColors.outline,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Please check your connection and try again',
-                  style: AppTypography.bodySm.copyWith(
-                    color: AppColors.outline,
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () => ref.invalidate(
+                      gemstoneDetailProvider(gemstoneId),
+                    ),
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('RETRY'),
                   ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: () => ref.invalidate(
-                    gemstoneDetailProvider(gemstoneId),
-                  ),
-                  icon: const Icon(Icons.refresh, size: 18),
-                  label: const Text('RETRY'),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 }
 
-class _DetailContent extends StatelessWidget {
-  const _DetailContent({required this.detail});
+class _DetailContent extends ConsumerStatefulWidget {
+  const _DetailContent({required this.detail, required this.isSellerView});
 
   final GemstoneDetail detail;
+  final bool isSellerView;
+
+  @override
+  ConsumerState<_DetailContent> createState() => _DetailContentState();
+}
+
+class _DetailContentState extends ConsumerState<_DetailContent> {
+  bool _isAddingToCart = false;
+  bool _addedToCartSuccess = false;
+
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusLg),
+        backgroundColor: AppColors.surface,
+        title: Text(
+          'Delete Listing',
+          style: AppTypography.titleLg.copyWith(
+            fontFamily: 'Playfair Display',
+            color: AppColors.primary,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete this certified listing from the vault ledger? This action is irreversible.',
+          style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: Text(
+              'CANCEL',
+              style: AppTypography.labelMd.copyWith(color: AppColors.outline),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              context.pop(); // dismiss dialog
+              await ref.read(sellerListingsProvider.notifier).removeListing(widget.detail.id);
+              if (mounted) {
+                ref.invalidate(sellerStatsProvider);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Listing removed from ledger database.'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+                context.pop(); // return to dashboard
+              }
+            },
+            child: Text(
+              'DELETE',
+              style: AppTypography.labelMd.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editListing() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ListingFormModal(editGemstone: widget.detail),
+    ).then((_) {
+      ref.invalidate(gemstoneDetailProvider(widget.detail.id));
+      ref.invalidate(sellerStatsProvider);
+    });
+  }
+
+  void _showDirectBuyEscrow() {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final subtotal = widget.detail.price;
+        final escrowFee = subtotal * 0.005;
+        final tax = subtotal * 0.03;
+        final shipping = subtotal > 20000 ? 0.0 : 250.0;
+        final total = subtotal + escrowFee + tax + shipping;
+
+        return _DirectBuyEscrowSimulationSheet(
+          amount: total,
+          onFinished: () {
+            context.pop(); // close modal
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Asset successfully acquired and secured in your personal vault.'),
+                backgroundColor: AppColors.secondary,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
 
-    final similarStones = detail.similarStoneIds.map((id) {
+    final similarStones = widget.detail.similarStoneIds.map((id) {
       return _buildSimilarStoneSummary(id);
     }).toList();
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        // ── Back button area ─────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.screenPaddingH,
-              topPadding + AppSpacing.unit,
-              AppSpacing.screenPaddingH,
-              AppSpacing.sm,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildActionCircle(
-                  icon: Icons.arrow_back_ios_new_rounded,
-                  onTap: () => Navigator.of(context).pop(),
-                ),
-                Row(
-                  children: [
-                    _buildActionCircle(
-                      icon: Icons.share_outlined,
-                      onTap: () {},
-                    ),
-                    const SizedBox(width: 8),
-                    _buildActionCircle(
-                      icon: Icons.favorite_border,
-                      onTap: () {},
-                      isAccent: true,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // ── Image Gallery ────────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenPaddingH,
-            ),
-            child: GemstoneImageGallery(
-              imageUrls: detail.imageUrls,
-              certificationBadge: detail.certificationBadge,
-            ),
-          ),
-        ),
-
-        // ── Gemstone Profile ─────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenPaddingH,
-              AppSpacing.md,
-              AppSpacing.screenPaddingH,
-              0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Collection label with icon
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.tertiaryContainer,
-                        borderRadius: AppSpacing.borderRadiusPill,
-                      ),
-                      child: Text(
-                        detail.collectionLabel.toUpperCase(),
-                        style: AppTypography.badge.copyWith(
-                          color: AppColors.onTertiaryContainer,
-                          fontSize: 9,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.verified,
-                      size: 16,
-                      color: AppColors.secondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Verified',
-                      style: AppTypography.overline.copyWith(
-                        color: AppColors.secondary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  detail.name,
-                  style: AppTypography.headlineMd.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 10),
-                PriceTag(
-                  price: detail.price,
-                  style: PriceTagStyle.large,
-                ),
-                const SizedBox(height: 6),
-                // Trust indicators row
-                Row(
-                  children: [
-                    TrustBadge(
-                      icon: Icons.verified_outlined,
-                      label: detail.certificationBadge,
-                    ),
-                    const SizedBox(width: 8),
-                    TrustBadge(
-                      icon: Icons.local_shipping_outlined,
-                      label: 'Free Shipping',
-                    ),
-                    const SizedBox(width: 8),
-                    TrustBadge(
-                      icon: Icons.autorenew,
-                      label: '30-Day Return',
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // ── 4C Bento Grid ────────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Container(
-            width: double.infinity,
-            margin: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenPaddingH,
-            ),
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.surfaceContainerLow.withValues(alpha: 0.5),
-                  AppColors.tertiaryContainer.withValues(alpha: 0.12),
-                ],
-              ),
-              borderRadius: AppSpacing.borderRadiusLg,
-              border: Border.all(
-                color: AppColors.outlineVariant.withValues(alpha: 0.15),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'THE 4Cs',
-                  style: AppTypography.eyebrow.copyWith(
-                    color: AppColors.outline,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                FourCGrid(
-                  caratWeight: detail.caratWeight,
-                  colorGrade: detail.colorGrade,
-                  clarityGrade: detail.clarityGrade,
-                  cutGrade: detail.cutGrade,
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // ── Technical Details ────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenPaddingH,
-              AppSpacing.md,
-              AppSpacing.screenPaddingH,
-              0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const GradientDivider(),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'SPECIFICATIONS',
-                  style: AppTypography.eyebrow.copyWith(
-                    color: AppColors.outline,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TechnicalDetailsSection(
-                  polish: detail.polish,
-                  symmetry: detail.symmetry,
-                  fluorescence: detail.fluorescence,
-                  giaReportNumber: detail.giaReportNumber,
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // ── GIA Certificate Badge ────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenPaddingH,
-              AppSpacing.md,
-              AppSpacing.screenPaddingH,
-              0,
-            ),
+    return Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(80),
             child: Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
+              height: 80 + topPadding,
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                topPadding,
+                AppSpacing.screenPaddingH,
+                0,
+              ),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.03),
-                    AppColors.primary.withValues(alpha: 0.08),
-                  ],
-                ),
-                borderRadius: AppSpacing.borderRadiusLg,
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.12),
+                color: AppColors.surface.withValues(alpha: 0.8),
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.outlineVariant.withValues(alpha: 0.15),
+                    width: 1,
+                  ),
                 ),
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: AppSpacing.borderRadiusMd,
-                    ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
                     child: const Icon(
-                      Icons.verified,
-                      color: AppColors.onPrimary,
-                      size: 28,
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.primary,
+                      size: 22,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'GIA Certified Natural',
-                          style: AppTypography.bodyMd.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Independently graded and verified by the Gemological Institute of America.',
-                          style: AppTypography.bodySm.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                  Text(
+                    'LUMINA GEMS',
+                    style: AppTypography.headlineMd.copyWith(
+                      fontFamily: 'Playfair Display',
+                      color: AppColors.primary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 14,
-                    color: AppColors.outline,
+                  const Icon(
+                    Icons.notifications_none_rounded,
+                    color: AppColors.primary,
+                    size: 24,
                   ),
                 ],
               ),
             ),
           ),
-        ),
-
-        // ── Curator's Note ───────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenPaddingH,
-              AppSpacing.lg,
-              AppSpacing.screenPaddingH,
-              0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const GradientDivider(label: 'FROM THE CURATOR'),
-                const SizedBox(height: AppSpacing.sm),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerLow,
-                    borderRadius: AppSpacing.borderRadiusLg,
-                    border: Border.all(
-                      color: AppColors.outlineVariant.withValues(alpha: 0.2),
-                    ),
+          body: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Image Gallery
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenPaddingH,
+                    AppSpacing.md,
+                    AppSpacing.screenPaddingH,
+                    AppSpacing.md,
                   ),
-                  child: Text(
-                    detail.description,
-                    style: AppTypography.bodyLg.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      height: 1.6,
-                      fontStyle: FontStyle.italic,
-                    ),
+                  child: GemstoneImageGallery(
+                    imageUrls: widget.detail.imageUrls,
+                    certificationBadge: widget.detail.certificationBadge,
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
+              ),
 
-        // ── Seller Profile ───────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenPaddingH,
-              AppSpacing.lg,
-              AppSpacing.screenPaddingH,
-              0,
-            ),
-            child: SellerProfileCard(seller: detail.seller),
-          ),
-        ),
+              // Title, collection, price
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenPaddingH,
+                    0,
+                    AppSpacing.screenPaddingH,
+                    AppSpacing.md,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.detail.collectionLabel.toUpperCase(),
+                        style: AppTypography.labelSm.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          letterSpacing: 2.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.detail.name,
+                        style: AppTypography.headlineMd.copyWith(
+                          fontFamily: 'Playfair Display',
+                          color: AppColors.primary,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '\$${widget.detail.price.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+                        style: AppTypography.headlineMd.copyWith(
+                          fontFamily: 'Playfair Display',
+                          color: AppColors.primary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
-        // ── Similar Stones ───────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.lg),
-            child: Column(
-              children: [
-                Padding(
+              // 4Cs Bento Box Grid
+              SliverToBoxAdapter(
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.screenPaddingH,
+                    vertical: AppSpacing.sm,
                   ),
-                  child: SectionHeader(
-                    title: 'Similar Stones',
-                    actionLabel: 'View Collection',
-                    onActionTap: () {},
+                  child: FourCGrid(
+                    caratWeight: widget.detail.caratWeight,
+                    colorGrade: widget.detail.colorGrade,
+                    clarityGrade: widget.detail.clarityGrade,
+                    cutGrade: widget.detail.cutGrade,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                SimilarStonesSection(stones: similarStones),
-              ],
-            ),
-          ),
-        ),
+              ),
 
-        // ── Bottom Action Bar ────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenPaddingH,
-              AppSpacing.lg,
-              AppSpacing.screenPaddingH,
-              AppSpacing.lg,
-            ),
-            child: Row(
-              children: [
-                // Add to Cart - primary CTA
-                Expanded(
+              // Technical Specifications Details
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenPaddingH,
+                    vertical: AppSpacing.sm,
+                  ),
+                  child: TechnicalDetailsSection(
+                    polish: widget.detail.polish,
+                    symmetry: widget.detail.symmetry,
+                    fluorescence: widget.detail.fluorescence,
+                    giaReportNumber: widget.detail.giaReportNumber,
+                  ),
+                ),
+              ),
+
+              // GIA Certificate Badge Section
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenPaddingH,
+                    vertical: AppSpacing.md,
+                  ),
                   child: Container(
-                    height: 54,
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: AppSpacing.borderRadiusDefault,
-                      boxShadow: AppSpacing.elevationPrimary,
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                      borderRadius: AppSpacing.borderRadiusCard,
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                      ),
                     ),
-                    alignment: Alignment.center,
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.shopping_bag_outlined,
-                          color: AppColors.onPrimary,
-                          size: 18,
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            borderRadius: AppSpacing.borderRadiusMd,
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Opacity(
+                            opacity: 0.8,
+                            child: Image.network(
+                              'https://lh3.googleusercontent.com/aida-public/AB6AXuC-FV5iDiyFZyiq5KvjI34j1NT6wae9N4wjM3ncL7MmdmkR9GbgUWcE8c_FoYItV8xiXtlaIxArYF4s7i18bA3mVdvA0fltEKoy1g34lNIg9Xej3m17uNHldrC-Qiq37sR9ssSKvDKGoiG_nAe8cj5mFKg2uo7UGSohcY1qB-ZSQcgJ8FiVY9a8c3M0u5P5N_iuDcQAvlUAcdoBSKyTHC_iKshUBObFzxJuPMqctZvMcknDKxTGnaBFL-Ze7D5E4dH2VnB7A8VuDiI',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'ADD TO PORTFOLIO',
-                          style: AppTypography.labelMd.copyWith(
-                            color: AppColors.onPrimary,
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'GIA Certified Natural',
+                                style: AppTypography.titleLg.copyWith(
+                                  color: AppColors.primary,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'This gemstone has been independently graded and verified by the Gemological Institute of America.',
+                                style: AppTypography.bodySm.copyWith(
+                                  color: AppColors.onSurfaceVariant,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                // Contact Seller
-                Container(
-                  height: 54,
-                  width: 54,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: AppColors.primary,
-                      width: 1.5,
-                    ),
-                    borderRadius: AppSpacing.borderRadiusDefault,
+              ),
+
+              // Description narrative (Curator's Note)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenPaddingH,
+                    vertical: AppSpacing.md,
                   ),
-                  child: const Icon(
-                    Icons.chat_bubble_outline,
-                    color: AppColors.primary,
-                    size: 22,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Curator's Note",
+                        style: AppTypography.headlineMd.copyWith(
+                          fontFamily: 'Playfair Display',
+                          color: AppColors.primary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        widget.detail.description,
+                        style: AppTypography.bodyLg.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          height: 1.6,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
+              ),
 
-        // Safe area bottom padding
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: MediaQuery.of(context).padding.bottom + 16,
-          ),
-        ),
-      ],
-    );
-  }
+              // Seller Profile Card
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenPaddingH,
+                    vertical: AppSpacing.sm,
+                  ),
+                  child: SellerProfileCard(seller: widget.detail.seller),
+                ),
+              ),
 
-  Widget _buildActionCircle({
-    required IconData icon,
-    required VoidCallback onTap,
-    bool isAccent = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: isAccent
-              ? AppColors.errorContainer
-              : AppColors.surfaceContainerLow,
-          borderRadius: AppSpacing.borderRadiusMd,
-          boxShadow: AppSpacing.elevationSm,
-        ),
-        child: Icon(
-          icon,
-          color: isAccent ? AppColors.error : AppColors.primary,
-          size: 20,
-        ),
-      ),
-    );
+              // Similar Stones
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.screenPaddingH,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Similar Stones',
+                              style: AppTypography.headlineMd.copyWith(
+                                fontFamily: 'Playfair Display',
+                                color: AppColors.primary,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {},
+                              child: Text(
+                                'View Collection',
+                                style: AppTypography.labelSm.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      SimilarStonesSection(stones: similarStones),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Safe area bottom padding
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: MediaQuery.of(context).padding.bottom + 24,
+                ),
+              ),
+            ],
+          ),
+          bottomNavigationBar: widget.isSellerView
+              ? Container(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.screenPaddingH,
+                    12,
+                    AppSpacing.screenPaddingH,
+                    MediaQuery.of(context).padding.bottom + 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface.withValues(alpha: 0.95),
+                    border: Border(
+                      top: BorderSide(
+                        color: AppColors.outlineVariant.withValues(alpha: 0.15),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Delete listing button
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _confirmDelete,
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.transparent,
+                              borderRadius: AppSpacing.borderRadiusDefault,
+                              border: Border.all(
+                                color: AppColors.error,
+                                width: 1,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: AppColors.error,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'DELETE LISTING',
+                                  style: AppTypography.labelSm.copyWith(
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Edit listing button
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _editListing,
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.primaryGradient,
+                              borderRadius: AppSpacing.borderRadiusDefault,
+                              boxShadow: AppSpacing.elevationPrimary,
+                            ),
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.edit_note_rounded,
+                                  color: AppColors.onPrimary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'EDIT LISTING',
+                                  style: AppTypography.labelSm.copyWith(
+                                    color: AppColors.onPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Container(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.screenPaddingH,
+                    12,
+                    AppSpacing.screenPaddingH,
+                    MediaQuery.of(context).padding.bottom + 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface.withValues(alpha: 0.95),
+                    border: Border(
+                      top: BorderSide(
+                        color: AppColors.outlineVariant.withValues(alpha: 0.15),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Chat button
+                      GestureDetector(
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => CommentsBottomSheet(gemstoneId: widget.detail.id),
+                          );
+                        },
+                        child: Container(
+                          height: 48,
+                          width: 48,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: AppColors.primary,
+                              width: 1,
+                            ),
+                            borderRadius: AppSpacing.borderRadiusDefault,
+                          ),
+                          child: const Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Add to Cart
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _isAddingToCart || _addedToCartSuccess
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    _isAddingToCart = true;
+                                  });
+                                  try {
+                                    await ref.read(cartProvider.notifier).addItem(widget.detail);
+                                    if (mounted) {
+                                      setState(() {
+                                        _isAddingToCart = false;
+                                        _addedToCartSuccess = true;
+                                      });
+                                      Future.delayed(const Duration(seconds: 2), () {
+                                        if (mounted) {
+                                          setState(() {
+                                            _addedToCartSuccess = false;
+                                          });
+                                        }
+                                      });
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      setState(() {
+                                        _isAddingToCart = false;
+                                      });
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Failed to add to cart: $e'),
+                                          backgroundColor: AppColors.error,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: _addedToCartSuccess ? AppColors.secondary : Colors.transparent,
+                              border: Border.all(
+                                color: _addedToCartSuccess ? AppColors.secondary : AppColors.primary,
+                                width: 1,
+                              ),
+                              borderRadius: AppSpacing.borderRadiusDefault,
+                            ),
+                            alignment: Alignment.center,
+                            child: _isAddingToCart
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      color: AppColors.primary,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : _addedToCartSuccess
+                                    ? const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle_rounded,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'ADDED TO CART',
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                              letterSpacing: 0.8,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : Text(
+                                        'ADD TO CART',
+                                        style: AppTypography.labelSm.copyWith(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.8,
+                                        ),
+                                      ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Buy Now
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _showDirectBuyEscrow,
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: AppSpacing.borderRadiusDefault,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.2),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'BUY NOW',
+                              style: AppTypography.labelSm.copyWith(
+                                color: AppColors.onPrimary,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+        );
   }
 
   GemstoneSummary _buildSimilarStoneSummary(String id) {
     const dummyMap = {
-      'eternal-radiant': GemstoneSummary(
-        id: 'eternal-radiant',
-        name: 'Eternal Radiant',
-        imageUrl:
-            'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&q=80',
-        certificationBadge: 'GIA VVS1',
-        weight: '2.45 ct',
-        cut: 'Excellent',
-        price: 18450,
-      ),
       'royal-azure': GemstoneSummary(
         id: 'royal-azure',
-        name: 'Royal Azure',
+        name: '1.8ct Emerald Cut',
         imageUrl:
-            'https://images.unsplash.com/photo-1583937443393-5e88ada6cd2e?w=400&q=80',
-        certificationBadge: 'IGI NATURAL',
-        weight: '3.12 ct',
-        cut: 'Oval',
-        price: 12200,
+            'https://lh3.googleusercontent.com/aida-public/AB6AXuCp-iOfZEms8AmAaNZE-gGE1gGZiYP3_lppkz1cAZmdrhTSDL8DSp1HN3DXDb1Bw0wrG6MoH_uRW_wp_tlMCPVjNnPohBEat7NWrkpf8xKgKyO4gvx7uh2vlunbhpuzuyIBSWSx2dB-FLhWJuAQ_WKNekPQt5evKr1kCpa_ZP4KWpcRzCNzbGqUgN1z_-OmkY_v2UMHTDV1fOAig4gxLQKlrupQpmU-oSlL8XJYqwY09ub_SalojHM4GCY_sqOxMxkpQkuiCc06-Uc',
+        certificationBadge: 'E · VVS2 · EX',
+        weight: '1.80 ct',
+        cut: 'Emerald Cut',
+        price: 28900,
       ),
       'nova-brilliant': GemstoneSummary(
         id: 'nova-brilliant',
-        name: 'Nova Brilliant',
+        name: '2.2ct Princess Cut',
         imageUrl:
-            'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=400&q=80',
-        certificationBadge: 'GIA IDEAL',
-        weight: '1.80 ct',
-        cut: 'Ideal',
-        price: 4950,
+            'https://lh3.googleusercontent.com/aida-public/AB6AXuBs2m9A6oJUw-YnrjcWi-X9MXfLYoFDdLa0FwZyl-6bMHi8rXGI1z85WE9zXFLjrbXGvnVb3sBzGrqMly8JVH5kBGsBij2RiL8KQI9qPjGOVCgR8QVCtUdZY1dfmxjFzMtc2rgt6f7TP_WIK_tvOjpPNrvndtbxztxt_X1WQFHhjHVAUEjkTWA8CkfwDu0E5W_wMFESyO1jDaLm1EOWTDNYS_YJV4mWKhVPNjCWPx951TbjvYNz9tQ3N7852UBCMBu2URpSL4ev0Jo',
+        certificationBadge: 'F · IF · EX',
+        weight: '2.20 ct',
+        cut: 'Princess Cut',
+        price: 34200,
       ),
       'lotus-cushion': GemstoneSummary(
         id: 'lotus-cushion',
-        name: 'Lotus Cushion',
+        name: '3.1ct Cushion Cut',
         imageUrl:
-            'https://images.unsplash.com/photo-1551122089-4e3e72477432?w=400&q=80',
-        certificationBadge: 'CERTIFIED RARE',
-        weight: '2.10 ct',
-        cut: 'Cushion',
-        price: 24800,
+            'https://lh3.googleusercontent.com/aida-public/AB6AXuAmM2LCdQ9ZAstvaHbLHfApLtvuFMxBZBVz7iM_bXzzc9Ga5w-RbIw7IN-F2Rgxbe9b-eN7u_on8SQThZud3-eedw-icSr8Xh7kFE3LbCMU3iihFLRsFQZH9YGoHvadgmQgxW5zXLV1tJN5IoAt9TqIINxc6HDzUy7gSZZWpf_oLTi5EPPpdmxZN4TIajoFxtp_V94j3u-pjGdshP_hKxPQFI0p_dAJUw3Nol9jGA-_M80ZeJm48Syw4mVvnHDwHF4qebIlGwVwJ2I',
+        certificationBadge: 'G · VS1 · VG',
+        weight: '3.10 ct',
+        cut: 'Cushion Cut',
+        price: 51000,
       ),
     };
 
@@ -624,5 +834,213 @@ class _DetailContent extends StatelessWidget {
           cut: '',
           price: 0,
         );
+  }
+}
+
+class _DirectBuyEscrowSimulationSheet extends StatefulWidget {
+  const _DirectBuyEscrowSimulationSheet({required this.amount, required this.onFinished});
+
+  final double amount;
+  final VoidCallback onFinished;
+
+  @override
+  State<_DirectBuyEscrowSimulationSheet> createState() => _DirectBuyEscrowSimulationSheetState();
+}
+
+class _DirectBuyEscrowSimulationSheetState extends State<_DirectBuyEscrowSimulationSheet> {
+  int _currentStep = 0;
+  final List<String> _stepsText = [
+    'Verifying certified gemstone provenance...',
+    'Establishing secure buyer-seller escrow account...',
+    'Minting cryptographic ownership tokens...',
+    'Securing physical asset transfer logs...'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _runSimulation();
+  }
+
+  void _runSimulation() async {
+    for (var i = 0; i < _stepsText.length; i++) {
+      await Future.delayed(const Duration(milliseconds: 1200));
+      if (mounted) {
+        setState(() {
+          _currentStep = i + 1;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isDone = _currentStep >= _stepsText.length;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPadding + 24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusXl)),
+        boxShadow: AppSpacing.elevationLg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.outlineVariant.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          if (!isDone) ...[
+            const SizedBox(
+              width: 48,
+              height: 48,
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 3,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Secure Escrow Pipeline',
+              style: AppTypography.titleLg.copyWith(
+                color: AppColors.primary,
+                fontFamily: 'Playfair Display',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Text(
+                _stepsText[_currentStep],
+                key: ValueKey<int>(_currentStep),
+                style: AppTypography.bodyMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 20),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.secondaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.done_all_rounded,
+                color: AppColors.secondary,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Escrow Initiated Successfully',
+              style: AppTypography.titleLg.copyWith(
+                color: AppColors.primary,
+                fontFamily: 'Playfair Display',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your investment deposits are locked in escrow. Provenance documents and GIA ownership tokens are being prepared for ledger confirmation.',
+              style: AppTypography.bodySm.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLow,
+                borderRadius: AppSpacing.borderRadiusMd,
+                border: Border.all(
+                  color: AppColors.outlineVariant.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Escrow ID',
+                        style: AppTypography.bodySm.copyWith(color: AppColors.outline),
+                      ),
+                      Text(
+                        '#CV-Direct-${Random().nextInt(8999) + 1000}',
+                        style: AppTypography.dataMono.copyWith(color: AppColors.primary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Settled',
+                        style: AppTypography.bodySm.copyWith(color: AppColors.outline),
+                      ),
+                      Text(
+                        '\$${widget.amount.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+                        style: AppTypography.dataMono.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Authentication',
+                        style: AppTypography.bodySm.copyWith(color: AppColors.outline),
+                      ),
+                      Text(
+                        'Secured via Escrow Ledger',
+                        style: AppTypography.badge.copyWith(color: AppColors.secondary),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: widget.onFinished,
+              child: Container(
+                height: 48,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: AppSpacing.borderRadiusDefault,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  'CONFIRM & RETURN',
+                  style: AppTypography.labelMd.copyWith(
+                    color: AppColors.onPrimary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
