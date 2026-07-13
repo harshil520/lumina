@@ -45,8 +45,8 @@ app.*.map.json
 /android/app/release
 
 
-AGENTS.md
-DESIGN.md
-GEMINI.md
-/.cursor
-SKILL.md
+# AGENTS.md
+# DESIGN.md
+# GEMINI.md
+# /.cursor
+# SKILL.md
