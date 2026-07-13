@@ -9,6 +9,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/animated_section.dart';
 import '../../../../core/widgets/ambient_gradient_background.dart';
+import '../../../../core/widgets/app_shell.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../widgets/category_grid.dart';
 import '../widgets/concierge_section.dart';
@@ -17,7 +18,6 @@ import '../widgets/home_bottom_nav_bar.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/trending_gemstones_grid.dart';
 import '../widgets/trust_banner.dart';
-import '../widgets/home_drawer.dart';
 
 /// Main home screen assembling all sections in a scrollable layout.
 ///
@@ -65,13 +65,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        drawer: const HomeDrawer(),
         body: AmbientGradientBackground.home(
           child: SafeArea(
             bottom: false,
-            child: _currentNavIndex == 4
-                ? _buildProfileView()
-                : CustomScrollView(
+            child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               // ── App Bar ────────────────────────────────────────────
@@ -86,17 +83,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Builder(
-                        builder: (context) {
-                          return GestureDetector(
-                            onTap: () => Scaffold.of(context).openDrawer(),
-                            child: const Icon(
-                              Icons.menu_rounded,
-                              color: AppColors.primary,
-                              size: 22,
-                            ),
-                          );
-                        }
+                      GestureDetector(
+                        onTap: () => rootScaffoldKey.currentState?.openDrawer(),
+                        child: const Icon(
+                          Icons.menu_rounded,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
                       ),
                       Text(
                         'LUMINA GEMS',
@@ -255,6 +248,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             } else if (index == 3) {
               // Sell tab - navigate to seller dashboard
               context.go('/seller-dashboard');
+            } else if (index == 4) {
+              // Profile tab - navigate to profile screen
+              context.push('/profile');
             } else {
               setState(() {
                 _currentNavIndex = index;
@@ -266,134 +262,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildProfileView() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'My Profile',
-            style: AppTypography.headlineLg.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: AppSpacing.borderRadiusCard,
-              border: Border.all(
-                color: AppColors.outlineVariant.withValues(alpha: 0.3),
-              ),
-              boxShadow: AppSpacing.elevationSm,
-            ),
-            child: Row(
-              children: [
-                ClipOval(
-                  child: Image.network(
-                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Alexander Sterling',
-                        style: AppTypography.titleLg.copyWith(
-                          color: AppColors.primary,
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'alexander@sterlinggems.com',
-                        style: AppTypography.bodySm.copyWith(
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: ListView(
-              physics: const BouncingScrollPhysics(),
-              children: [
-                _buildProfileItem(Icons.shopping_bag_outlined, 'Recent Orders', 'Track and manage your orders'),
-                _buildProfileItem(Icons.location_on_outlined, 'Saved Addresses', 'Manage delivery locations'),
-                _buildProfileItem(Icons.payment_outlined, 'Payment Methods', 'Manage cards and billing'),
-                _buildProfileItem(Icons.favorite_border, 'Wishlist', 'View your saved items'),
-                _buildProfileItem(Icons.help_outline, 'Help & Support', 'Get assistance and contact us'),
-                const SizedBox(height: 24),
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.error),
-                      borderRadius: AppSpacing.borderRadiusDefault,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'LOGOUT',
-                      style: AppTypography.labelMd.copyWith(color: AppColors.error),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileItem(IconData icon, String title, String subtitle) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppSpacing.borderRadiusCard,
-        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.15)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primary, size: 22),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.bodyMd.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: AppTypography.bodySm.copyWith(color: AppColors.outline),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.arrow_forward_ios, color: AppColors.outline, size: 12),
-        ],
-      ),
-    );
-  }
 }

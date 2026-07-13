@@ -161,18 +161,22 @@ class _SearchResultCardState extends State<SearchResultCard> {
                         fontWeight: FontWeight.bold,
                         height: 1.2,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    '\$${widget.result.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
-                    style: AppTypography.titleLg.copyWith(
-                      fontFamily: 'Playfair Display',
-                      fontSize: 13,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+                  Flexible(
+                    child: Text(
+                      '\$${widget.result.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+                      style: AppTypography.titleLg.copyWith(
+                        fontFamily: 'Playfair Display',
+                        fontSize: 13,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -216,6 +220,8 @@ class _SearchResultCardState extends State<SearchResultCard> {
             letterSpacing: 0.5,
             fontWeight: FontWeight.bold,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 1),
         Text(

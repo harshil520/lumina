@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/ambient_gradient_background.dart';
+import '../../../../core/widgets/app_shell.dart';
 import '../../application/search_provider.dart';
 import '../../domain/models/search_filter.dart';
 import '../widgets/diamond_shape_painter.dart';
@@ -305,10 +306,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Icon(
-            Icons.menu_rounded,
-            color: AppColors.primary,
-            size: 22,
+          GestureDetector(
+            onTap: () => rootScaffoldKey.currentState?.openDrawer(),
+            child: const Icon(
+              Icons.menu_rounded,
+              color: AppColors.primary,
+              size: 22,
+            ),
           ),
           Text(
             'LUMINA GEMS',

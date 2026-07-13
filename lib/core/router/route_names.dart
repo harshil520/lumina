@@ -8,7 +8,6 @@ class RouteNames {
   static const String cart = 'cart';
   static const String sellerDashboard = 'seller-dashboard';
   static const String notifications = 'notifications';
-  static const String shopNow = 'shop-now';
   static const String exploreDeals = 'explore-deals';
   static const String categories = 'categories';
   static const String shapes = 'shapes';
@@ -19,6 +18,14 @@ class RouteNames {
   static const String checkout = 'checkout';
   static const String certificationUpload = 'certification-upload';
   static const String concierge = 'concierge';
+  static const String profile = 'profile';
+  static const String editProfile = 'edit-profile';
+  static const String orders = 'orders';
+  static const String addresses = 'addresses';
+  static const String paymentMethods = 'payment-methods';
+  static const String wishlist = 'wishlist';
+  static const String help = 'help';
+  static const String settings = 'settings';
 }
 
 

@@ -173,13 +173,17 @@ class _SearchResultListTileState extends State<SearchResultListTile> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          '\$${widget.result.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
-                          style: AppTypography.titleLg.copyWith(
-                            fontFamily: 'Playfair Display',
-                            fontSize: 13,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
+                        Flexible(
+                          child: Text(
+                            '\$${widget.result.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+                            style: AppTypography.titleLg.copyWith(
+                              fontFamily: 'Playfair Display',
+                              fontSize: 13,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -227,6 +231,8 @@ class _SearchResultListTileState extends State<SearchResultListTile> {
             letterSpacing: 0.5,
             fontWeight: FontWeight.bold,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 1),
         Text(

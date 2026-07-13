@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/shimmer_image.dart';
+import '../../../../core/widgets/app_shell.dart';
 import '../../../../features/gemstone_detail/domain/models/gemstone_detail.dart';
 import '../../application/seller_dashboard_providers.dart';
 import '../../domain/models/seller_stats.dart';
@@ -41,10 +42,6 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: _buildTopAppBar(),
-        ),
         bottomNavigationBar: HomeBottomNavBar(
           currentIndex: 3,
           onTap: (index) {
@@ -61,7 +58,9 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen> {
           },
         ),
         body: AmbientGradientBackground.home(
-          child: RefreshIndicator(
+          child: SafeArea(
+            bottom: false,
+            child: RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(sellerListingsProvider);
               ref.invalidate(sellerStatsProvider);
@@ -71,16 +70,19 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen> {
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: width > 900 ? AppSpacing.gutter * 2 : AppSpacing.screenPaddingH,
-                  vertical: AppSpacing.md,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                  // 1. Seller Welcome & CTA
-                  _buildWelcomeCta(context),
+              child: Column(
+                children: [
+                  _buildTopAppBar(),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: width > 900 ? AppSpacing.gutter * 2 : AppSpacing.screenPaddingH,
+                      vertical: AppSpacing.md,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                      // 1. Seller Welcome & CTA
+                      _buildWelcomeCta(context),
                   const SizedBox(height: AppSpacing.lg),
 
                   // 2. Metric Cards Grid
@@ -127,11 +129,14 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen> {
                 ],
               ),
             ),
-          ),
+          ],
         ),
       ),
     ),
-    );
+    ),
+  ),
+),
+);
   }
 
   Widget _buildTopAppBar() {
@@ -147,36 +152,37 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen> {
           ),
         ),
       ),
-      child: SafeArea(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                const Icon(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => rootScaffoldKey.currentState?.openDrawer(),
+                child: const Icon(
                   Icons.menu_rounded,
                   color: AppColors.primary,
                   size: 22,
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  'LUMINA GEMS',
-                  style: GoogleFonts.playfairDisplay(
-                    color: AppColors.primary,
-                    letterSpacing: 1.5,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'LUMINA GEMS',
+                style: GoogleFonts.playfairDisplay(
+                  color: AppColors.primary,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
                 ),
-              ],
-            ),
-            const Icon(
-              Icons.notifications_none_rounded,
-              color: AppColors.primary,
-              size: 22,
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const Icon(
+            Icons.notifications_none_rounded,
+            color: AppColors.primary,
+            size: 22,
+          ),
+        ],
       ),
     );
   }

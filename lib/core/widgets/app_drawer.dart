@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/theme/app_typography.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 
-class HomeDrawer extends StatelessWidget {
-  const HomeDrawer({super.key});
+class AppDrawer extends StatelessWidget {
+  const AppDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,6 @@ class HomeDrawer extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Elegant Drawer Header
           Container(
             width: double.infinity,
             padding: EdgeInsets.fromLTRB(
@@ -102,20 +101,10 @@ class HomeDrawer extends StatelessWidget {
               ],
             ),
           ),
-
-          // Drawer Links
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               children: [
-                _buildDrawerItem(
-                  icon: Icons.storefront_outlined,
-                  title: 'Shop Catalog',
-                  onTap: () {
-                    context.pop();
-                    context.push('/shop-now');
-                  },
-                ),
                 _buildDrawerItem(
                   icon: Icons.shopping_bag_outlined,
                   title: 'Cart',
@@ -138,6 +127,22 @@ class HomeDrawer extends StatelessWidget {
                   onTap: () {
                     context.pop();
                     context.push('/concierge');
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.person_outline,
+                  title: 'My Profile',
+                  onTap: () {
+                    context.pop();
+                    context.push('/profile');
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.settings_outlined,
+                  title: 'Settings',
+                  onTap: () {
+                    context.pop();
+                    context.push('/settings');
                   },
                 ),
                 const Divider(height: 32, thickness: 1, indent: 16, endIndent: 16),
@@ -164,8 +169,6 @@ class HomeDrawer extends StatelessWidget {
               ],
             ),
           ),
-
-          // App version / footer
           Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
