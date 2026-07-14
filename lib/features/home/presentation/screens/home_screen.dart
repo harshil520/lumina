@@ -241,16 +241,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onTap: (index) {
             if (index == 1) {
               // Search tab - navigate to search screen
-              context.push('/search');
+              context.go('/search');
             } else if (index == 2) {
               // Cart tab - navigate to cart screen
-              context.push('/cart');
+              context.go('/cart');
             } else if (index == 3) {
               // Sell tab - navigate to seller dashboard
               context.go('/seller-dashboard');
             } else if (index == 4) {
               // Profile tab - navigate to profile screen
-              context.push('/profile');
+              context.go('/profile');
             } else {
               setState(() {
                 _currentNavIndex = index;

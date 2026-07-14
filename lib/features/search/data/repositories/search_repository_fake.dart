@@ -13,8 +13,10 @@ class SearchRepositoryFake implements SearchRepository {
     int page = 1,
     int pageSize = 20,
   }) async {
-    // Simulate network latency
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Simulate network latency only for active text query searches to keep category browsing instant
+    if (query.isNotEmpty) {
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
 
     // Return filtered results based on query
     final allResults = _getAllResults();

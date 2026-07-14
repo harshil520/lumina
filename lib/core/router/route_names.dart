@@ -21,8 +21,10 @@ class RouteNames {
   static const String profile = 'profile';
   static const String editProfile = 'edit-profile';
   static const String orders = 'orders';
+  static const String orderDetail = 'order-detail';
   static const String addresses = 'addresses';
   static const String paymentMethods = 'payment-methods';
+  static const String messages = 'messages';
   static const String wishlist = 'wishlist';
   static const String help = 'help';
   static const String settings = 'settings';

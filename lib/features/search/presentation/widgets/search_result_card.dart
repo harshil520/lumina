@@ -61,7 +61,7 @@ class _SearchResultCardState extends State<SearchResultCard> {
         curve: Curves.easeOut,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: AppColors.surfaceContainerLowest,
             borderRadius: AppSpacing.borderRadiusLg,
@@ -145,7 +145,7 @@ class _SearchResultCardState extends State<SearchResultCard> {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               // Title & Price Row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -181,7 +181,7 @@ class _SearchResultCardState extends State<SearchResultCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               // Specification Grid (2 columns x 2 rows)
               Column(
                 children: [
@@ -191,7 +191,7 @@ class _SearchResultCardState extends State<SearchResultCard> {
                       Expanded(child: _buildSpecItem(displaySpecs[1].key, displaySpecs[1].value)),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Row(
                     children: [
                       Expanded(child: _buildSpecItem(displaySpecs[2].key, displaySpecs[2].value)),

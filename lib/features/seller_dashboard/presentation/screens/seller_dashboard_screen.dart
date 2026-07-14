@@ -50,10 +50,10 @@ class _SellerDashboardScreenState extends ConsumerState<SellerDashboardScreen> {
             } else if (index == 1) {
               context.go('/search');
             } else if (index == 2) {
-              context.push('/cart');
+              context.go('/cart');
             } else if (index == 4) {
-              // Redirect to home and show profile
-              context.go('/?tab=4');
+              // Navigate to profile screen
+              context.go('/profile');
             }
           },
         ),

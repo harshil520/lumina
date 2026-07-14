@@ -1,3 +1,8 @@
+import 'order_item.dart';
+import 'payment_info.dart';
+import 'shipping_info.dart';
+import 'timeline_event.dart';
+
 /// Order status enum matching common marketplace states.
 enum OrderStatus {
   pending,
@@ -31,6 +36,15 @@ class Order {
     required this.itemCount,
     this.trackingNumber,
     this.imageUrl,
+    this.subtotal,
+    this.shippingCost,
+    this.tax,
+    this.items,
+    this.shippingAddress,
+    this.paymentInfo,
+    this.timeline,
+    this.carrier,
+    this.estimatedDelivery,
   });
 
   final String id;
@@ -40,4 +54,13 @@ class Order {
   final int itemCount;
   final String? trackingNumber;
   final String? imageUrl;
+  final double? subtotal;
+  final double? shippingCost;
+  final double? tax;
+  final List<OrderItem>? items;
+  final ShippingInfo? shippingAddress;
+  final PaymentInfo? paymentInfo;
+  final List<TimelineEvent>? timeline;
+  final String? carrier;
+  final DateTime? estimatedDelivery;
 }

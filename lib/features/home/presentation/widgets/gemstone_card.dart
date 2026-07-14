@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/route_names.dart';
@@ -6,29 +7,53 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/shimmer_image.dart';
+import '../../../../features/profile/application/profile_providers.dart';
+import '../../../../features/profile/domain/models/wishlist_item.dart';
 import '../../domain/models/gemstone_summary.dart';
 
-/// Individual product card for trending gemstones.
-///
-/// Displays image, certification badge, weight/cut specs, price, and
-/// a favorite toggle. Navigates to gemstone detail on tap.
-/// Enhanced with GIVA-inspired product card styling, sale badges,
-/// and interactive hover effects.
-class GemstoneCard extends StatefulWidget {
+/// Individual product card for trending gemstones with wishlist integration.
+class GemstoneCard extends ConsumerStatefulWidget {
   const GemstoneCard({super.key, required this.gemstone});
 
   final GemstoneSummary gemstone;
 
   @override
-  State<GemstoneCard> createState() => _GemstoneCardState();
+  ConsumerState<GemstoneCard> createState() => _GemstoneCardState();
 }
 
-class _GemstoneCardState extends State<GemstoneCard> {
+class _GemstoneCardState extends ConsumerState<GemstoneCard> {
   bool _isHovered = false;
-  bool _isFavorited = false;
+
+  bool _isInWishlist(List<WishlistItem> items) {
+    return items.any((item) => item.productId == widget.gemstone.id);
+  }
+
+  Future<void> _toggleWishlist(List<WishlistItem> items) async {
+    final repo = ref.read(profileRepositoryProvider);
+    final isFav = _isInWishlist(items);
+
+    if (isFav) {
+      final item = items.firstWhere((i) => i.productId == widget.gemstone.id);
+      await repo.removeFromWishlist(item.id);
+    } else {
+      await repo.addToWishlist(WishlistItem(
+        id: 'wish_${DateTime.now().millisecondsSinceEpoch}',
+        productId: widget.gemstone.id,
+        title: widget.gemstone.name,
+        imageUrl: widget.gemstone.imageUrl,
+        price: widget.gemstone.price,
+        addedAt: DateTime.now(),
+      ));
+    }
+    ref.invalidate(wishlistProvider);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final wishlistAsync = ref.watch(wishlistProvider);
+    final wishlistItems = wishlistAsync.valueOrNull ?? [];
+    final isFavorited = _isInWishlist(wishlistItems);
+
     return GestureDetector(
       onTap: () {
         context.pushNamed(
@@ -59,7 +84,6 @@ class _GemstoneCardState extends State<GemstoneCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image section
               AspectRatio(
                 aspectRatio: 1.0,
                 child: Stack(
@@ -69,7 +93,6 @@ class _GemstoneCardState extends State<GemstoneCard> {
                       imageUrl: widget.gemstone.imageUrl,
                       fit: BoxFit.cover,
                     ),
-                    // Subtle gradient overlay on hover
                     AnimatedOpacity(
                       opacity: _isHovered ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 200),
@@ -86,15 +109,11 @@ class _GemstoneCardState extends State<GemstoneCard> {
                         ),
                       ),
                     ),
-                    // Certification badge on the top-right
                     Positioned(
                       top: 12,
                       right: 12,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.9),
                           borderRadius: AppSpacing.borderRadiusSm,
@@ -117,7 +136,6 @@ class _GemstoneCardState extends State<GemstoneCard> {
                   ],
                 ),
               ),
-              // Info section
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -138,19 +156,16 @@ class _GemstoneCardState extends State<GemstoneCard> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {
-                            setState(() => _isFavorited = !_isFavorited);
-                          },
+                          onTap: () => _toggleWishlist(wishlistItems),
                           child: Icon(
-                            _isFavorited ? Icons.favorite : Icons.favorite_border,
-                            color: _isFavorited ? AppColors.error : AppColors.outline,
+                            isFavorited ? Icons.favorite : Icons.favorite_border,
+                            color: isFavorited ? AppColors.error : AppColors.outline,
                             size: 20,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Specs row with dividers
                     Row(
                       children: [
                         _SpecItem(label: 'WEIGHT', value: widget.gemstone.weight),
@@ -164,7 +179,6 @@ class _GemstoneCardState extends State<GemstoneCard> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    // Price with serif font
                     Text(
                       '\$${widget.gemstone.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
                       style: AppTypography.headlineLg.copyWith(
@@ -197,9 +211,7 @@ class _SpecItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AppTypography.overline.copyWith(
-            color: AppColors.outline,
-          ),
+          style: AppTypography.overline.copyWith(color: AppColors.outline),
         ),
         const SizedBox(height: 2),
         Text(

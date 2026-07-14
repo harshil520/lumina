@@ -393,5 +393,6 @@ class DiamondShapePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(DiamondShapePainter oldDelegate) =>
+      oldDelegate.shape != shape || oldDelegate.color != color;
 }

@@ -10,6 +10,9 @@ final cartRepositoryProvider = Provider<CartRepository>((ref) {
   return CartRepositoryImpl();
 });
 
+/// Provides a List of IDs of gemstones in the cart that are currently updating.
+final updatingCartItemsProvider = StateProvider<Set<String>>((ref) => {});
+
 /// Notifier to manage the portfolio cart state reactively.
 class CartNotifier extends AsyncNotifier<List<CartItem>> {
   @override
@@ -29,22 +32,32 @@ class CartNotifier extends AsyncNotifier<List<CartItem>> {
 
   /// Updates the quantity of an item in the cart.
   Future<void> updateQuantity(String gemstoneId, int quantity) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    ref.read(updatingCartItemsProvider.notifier).update((s) => {...s, gemstoneId});
+    try {
       final repository = ref.read(cartRepositoryProvider);
       await repository.updateQuantity(gemstoneId, quantity);
-      return repository.getCartItems();
-    });
+      final newItems = await repository.getCartItems();
+      state = AsyncValue.data(newItems);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    } finally {
+      ref.read(updatingCartItemsProvider.notifier).update((s) => s.where((id) => id != gemstoneId).toSet());
+    }
   }
 
   /// Removes a gemstone from the portfolio cart by ID.
   Future<void> removeItem(String gemstoneId) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    ref.read(updatingCartItemsProvider.notifier).update((s) => {...s, gemstoneId});
+    try {
       final repository = ref.read(cartRepositoryProvider);
       await repository.removeFromCart(gemstoneId);
-      return repository.getCartItems();
-    });
+      final newItems = await repository.getCartItems();
+      state = AsyncValue.data(newItems);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    } finally {
+      ref.read(updatingCartItemsProvider.notifier).update((s) => s.where((id) => id != gemstoneId).toSet());
+    }
   }
 
   /// Clears the entire portfolio cart.

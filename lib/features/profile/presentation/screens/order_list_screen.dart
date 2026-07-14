@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -80,58 +81,64 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppSpacing.borderRadiusCard,
-        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.15)),
-        boxShadow: AppSpacing.elevationSm,
+    return GestureDetector(
+      onTap: () => context.pushNamed(
+        RouteNames.orderDetail,
+        pathParameters: {'id': order.id},
       ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: AppSpacing.borderRadiusMd,
-            child: Image.network(
-              order.imageUrl ?? '',
-              width: 56,
-              height: 56,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppSpacing.borderRadiusCard,
+          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.15)),
+          boxShadow: AppSpacing.elevationSm,
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: AppSpacing.borderRadiusMd,
+              child: Image.network(
+                order.imageUrl ?? '',
+                width: 56,
+                height: 56,
+                fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Container(
                 width: 56,
                 height: 56,
                 color: AppColors.surfaceContainerHigh,
                 child: const Icon(Icons.image, color: AppColors.outline),
               ),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(order.id, style: AppTypography.bodyMd.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary)),
-                const SizedBox(height: 2),
-                Text('${order.itemCount} item${order.itemCount > 1 ? 's' : ''} · \$${order.total.toStringAsFixed(2)}',
-                    style: AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant)),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _statusColor(order.status).withValues(alpha: 0.1),
-                    borderRadius: AppSpacing.borderRadiusPill,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(order.id, style: AppTypography.bodyMd.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  const SizedBox(height: 2),
+                  Text('${order.itemCount} item${order.itemCount > 1 ? 's' : ''} · \$${order.total.toStringAsFixed(2)}',
+                      style: AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _statusColor(order.status).withValues(alpha: 0.1),
+                      borderRadius: AppSpacing.borderRadiusPill,
+                    ),
+                    child: Text(
+                      order.status.label,
+                      style: AppTypography.badge.copyWith(color: _statusColor(order.status)),
+                    ),
                   ),
-                  child: Text(
-                    order.status.label,
-                    style: AppTypography.badge.copyWith(color: _statusColor(order.status)),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.arrow_forward_ios, color: AppColors.outline, size: 12),
-        ],
+            const Icon(Icons.arrow_forward_ios, color: AppColors.outline, size: 12),
+          ],
+        ),
       ),
     );
   }

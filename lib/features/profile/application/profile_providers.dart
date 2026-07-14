@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/profile_repository_fake.dart';
+import '../domain/models/message.dart';
 import '../domain/models/order.dart';
 import '../domain/models/payment_method.dart';
 import '../domain/models/saved_address.dart';
@@ -20,14 +21,29 @@ final ordersProvider = FutureProvider<List<Order>>((ref) async {
   return ref.read(profileRepositoryProvider).getOrders();
 });
 
+final orderDetailProvider = FutureProvider.family<Order, String>((ref, orderId) async {
+  return ref.read(profileRepositoryProvider).getOrderById(orderId);
+});
+
 final addressesProvider = FutureProvider<List<SavedAddress>>((ref) async {
   return ref.read(profileRepositoryProvider).getAddresses();
 });
 
-final paymentMethodsProvider = FutureProvider<List<PaymentMethod>>((ref) async {
+final paymentMethodsProvider =
+    FutureProvider<List<PaymentMethod>>((ref) async {
   return ref.read(profileRepositoryProvider).getPaymentMethods();
 });
 
-final wishlistProvider = FutureProvider<List<WishlistItem>>((ref) async {
+final addPaymentMethodProvider =
+    FutureProvider.family<PaymentMethod, PaymentMethod>((ref, method) async {
+  return ref.read(profileRepositoryProvider).addPaymentMethod(method);
+});
+
+final messagesProvider = FutureProvider<List<Message>>((ref) async {
+  return ref.read(profileRepositoryProvider).getMessages();
+});
+
+final wishlistProvider =
+    FutureProvider<List<WishlistItem>>((ref) async {
   return ref.read(profileRepositoryProvider).getWishlist();
 });

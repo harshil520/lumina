@@ -18,9 +18,19 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
+        appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
+        ),
         title: Text(
           'My Profile',
           style: AppTypography.headlineLg.copyWith(
@@ -50,6 +60,7 @@ class ProfileScreen extends ConsumerWidget {
                     _MenuItem(icon: Icons.shopping_bag_outlined, title: 'Recent Orders', subtitle: 'Track and manage your orders', route: '/profile/orders'),
                     _MenuItem(icon: Icons.location_on_outlined, title: 'Saved Addresses', subtitle: 'Manage delivery locations', route: '/profile/addresses'),
                     _MenuItem(icon: Icons.payment_outlined, title: 'Payment Methods', subtitle: 'Manage cards and billing', route: '/profile/payment-methods'),
+                    _MenuItem(icon: Icons.mail_outline, title: 'Messages', subtitle: 'Inbox and support conversations', route: '/profile/messages'),
                     _MenuItem(icon: Icons.favorite_border, title: 'Wishlist', subtitle: 'View your saved items', route: '/profile/wishlist'),
                     _MenuItem(icon: Icons.help_outline, title: 'Help & Support', subtitle: 'Get assistance and contact us', route: '/profile/help'),
                     _MenuItem(icon: Icons.settings_outlined, title: 'Settings', subtitle: 'App preferences and account', route: '/settings'),

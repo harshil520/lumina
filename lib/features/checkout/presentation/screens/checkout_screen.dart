@@ -93,46 +93,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   // Complete Order sequence
   void _completeOrder() async {
-    showDialog(
+    await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: Card(
-          color: AppColors.surface,
-          margin: EdgeInsets.all(32),
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
-                SizedBox(height: 16),
-                Text(
-                  'MINTING OWNERSHIP CRYPTOGRAPHY...',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      builder: (_) => const _MintingLoadingDialog(),
     );
 
-    // Simulated network delay
-    await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
-    Navigator.pop(context); // pop loading dialog
-
-    // Clear cart
     await ref.read(cartProvider.notifier).clearCart();
 
-    // Show success dialog
     if (!mounted) return;
     showDialog(
       context: context,
@@ -161,8 +130,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(dialogCtx); // close dialog
-              context.go('/'); // redirect to homepage
+              Navigator.pop(dialogCtx);
+              context.go('/');
             },
             child: Text(
               'RETURN TO VAULT',
@@ -1533,6 +1502,55 @@ class _SummaryTrustBadge extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Loading dialog that auto-dismisses after 3 seconds.
+/// Used during the simulated order processing to show the minting state.
+class _MintingLoadingDialog extends StatefulWidget {
+  const _MintingLoadingDialog();
+
+  @override
+  State<_MintingLoadingDialog> createState() => _MintingLoadingDialogState();
+}
+
+class _MintingLoadingDialogState extends State<_MintingLoadingDialog> {
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Card(
+        color: AppColors.surface,
+        margin: EdgeInsets.all(32),
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
+              SizedBox(height: 16),
+              Text(
+                'MINTING OWNERSHIP CRYPTOGRAPHY...',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

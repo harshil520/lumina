@@ -12,32 +12,29 @@ import '../../application/cart_provider.dart';
 import '../../domain/models/cart_item.dart';
 import '../../../home/presentation/widgets/home_bottom_nav_bar.dart';
 
+import '../../../../core/widgets/app_shell.dart';
+
 /// Screen displaying the items added to the user's Vault Cart.
 ///
 /// Features a virtualized list, a high-trust layout, and an interactive secure checkout simulation.
-class CartScreen extends ConsumerWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends ConsumerState<CartScreen> {
+  bool _isBreakdownExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final cartItemsAsync = ref.watch(cartProvider);
+    final canPop = Navigator.of(context).canPop();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      bottomNavigationBar: HomeBottomNavBar(
-        currentIndex: 2,
-        onTap: (index) {
-          if (index == 0) {
-            context.go('/');
-          } else if (index == 1) {
-            context.push('/search');
-          } else if (index == 3) {
-            context.go('/seller-dashboard');
-          } else if (index == 4) {
-            context.go('/?tab=4');
-          }
-        },
-      ),
+      bottomNavigationBar: null,
       body: AmbientGradientBackground.home(
         child: SafeArea(
           bottom: false,
@@ -155,6 +152,7 @@ class CartScreen extends ConsumerWidget {
   ) {
     final width = MediaQuery.of(context).size.width;
     final isDesktop = width > 850;
+    final canPop = Navigator.of(context).canPop();
 
     return Column(
       children: [
@@ -170,7 +168,13 @@ class CartScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               GestureDetector(
-                onTap: () => context.pop(),
+                onTap: () {
+                  if (canPop) {
+                    context.pop();
+                  } else {
+                    context.go('/');
+                  }
+                },
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
@@ -350,252 +354,288 @@ class CartScreen extends ConsumerWidget {
       ];
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppSpacing.borderRadiusLg,
-        border: Border.all(
-          color: AppColors.outlineVariant.withValues(alpha: 0.3),
-        ),
-        boxShadow: AppSpacing.elevationSm,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Gemstone Image (tappable to detail view)
-          GestureDetector(
-            onTap: () => context.push('/gemstone/${stone.id}'),
-            child: SizedBox(
-              width: 120,
-              height: 130,
-              child: ShimmerImage(
-                imageUrl: stone.imageUrls.isNotEmpty ? stone.imageUrls.first : '',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          // Specifications & Title
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Consumer(
+      builder: (context, ref, child) {
+        final updatingItems = ref.watch(updatingCartItemsProvider);
+        final isUpdating = updatingItems.contains(stone.id);
+
+        return Stack(
+          children: [
+            Opacity(
+              opacity: isUpdating ? 0.55 : 1.0,
+              child: AbsorbPointer(
+                absorbing: isUpdating,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: AppSpacing.borderRadiusLg,
+                    border: Border.all(
+                      color: AppColors.outlineVariant.withValues(alpha: 0.3),
+                    ),
+                    boxShadow: AppSpacing.elevationSm,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => context.push('/gemstone/${stone.id}'),
-                          child: Text(
-                            stone.name,
-                            style: AppTypography.titleLg.copyWith(
-                              color: AppColors.primary,
-                              fontFamily: 'Playfair Display',
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
+                      // Gemstone Image (tappable to detail view)
                       GestureDetector(
-                        onTap: () {
-                          ref.read(cartProvider.notifier).removeItem(stone.id);
-                        },
-                        behavior: HitTestBehavior.opaque,
-                        child: const Padding(
-                          padding: EdgeInsets.only(left: 8),
-                          child: Icon(
-                            Icons.delete_outline_rounded,
-                            color: AppColors.outline,
-                            size: 20,
+                        onTap: () => context.push('/gemstone/${stone.id}'),
+                        child: SizedBox(
+                          width: 120,
+                          height: 130,
+                          child: ShimmerImage(
+                            imageUrl: stone.imageUrls.isNotEmpty ? stone.imageUrls.first : '',
+                            fit: BoxFit.cover,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.tertiaryFixed,
-                          borderRadius: AppSpacing.borderRadiusPill,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.verified_user_rounded,
-                              size: 10,
-                              color: AppColors.onTertiaryFixedVariant,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'GIA Certified',
-                              style: AppTypography.badge.copyWith(
-                                color: AppColors.onTertiaryFixedVariant,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHigh,
-                          borderRadius: AppSpacing.borderRadiusPill,
-                        ),
-                        child: Text(
-                          stone.collectionLabel,
-                          style: AppTypography.badge.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                            fontSize: 9,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Specifications Grid
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 6,
-                    children: specs.map((spec) {
-                      return SizedBox(
-                        width: 70,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              spec.$1,
-                              style: AppTypography.labelSm.copyWith(
-                                color: AppColors.outline,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              spec.$2,
-                              style: AppTypography.dataMono.copyWith(
-                                color: AppColors.primary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'SKU: ${stone.giaReportNumber}',
-                            style: AppTypography.labelSm.copyWith(
-                              color: AppColors.outline,
-                              fontSize: 9,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    if (item.quantity > 1) {
-                                      ref.read(cartProvider.notifier).updateQuantity(stone.id, item.quantity - 1);
-                                    } else {
-                                      ref.read(cartProvider.notifier).removeItem(stone.id);
-                                    }
-                                  },
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    child: const Icon(Icons.remove, size: 12, color: AppColors.primary),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                                  child: Text(
-                                    '${item.quantity}',
-                                    style: AppTypography.bodyMd.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
-                                      fontSize: 12,
+                      const SizedBox(width: 14),
+                      // Specifications & Title
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () => context.push('/gemstone/${stone.id}'),
+                                      child: Text(
+                                        stone.name,
+                                        style: AppTypography.titleLg.copyWith(
+                                          color: AppColors.primary,
+                                          fontFamily: 'Playfair Display',
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    ref.read(cartProvider.notifier).updateQuantity(stone.id, item.quantity + 1);
-                                  },
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    child: const Icon(Icons.add, size: 12, color: AppColors.primary),
+                                  GestureDetector(
+                                    onTap: () {
+                                      ref.read(cartProvider.notifier).removeItem(stone.id);
+                                    },
+                                    behavior: HitTestBehavior.opaque,
+                                    child: const Padding(
+                                      padding: EdgeInsets.only(left: 8),
+                                      child: Icon(
+                                        Icons.delete_outline_rounded,
+                                        color: AppColors.outline,
+                                        size: 20,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '\$${(stone.price * item.quantity).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
-                            style: AppTypography.titleLg.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (item.quantity > 1)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Text(
-                                '\$${stone.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} each',
-                                style: AppTypography.labelSm.copyWith(
-                                  color: AppColors.outline,
-                                  fontSize: 9,
-                                ),
+                                ],
                               ),
-                            ),
-                        ],
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.tertiaryFixed,
+                                      borderRadius: AppSpacing.borderRadiusPill,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.verified_user_rounded,
+                                          size: 10,
+                                          color: AppColors.onTertiaryFixedVariant,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'GIA Certified',
+                                          style: AppTypography.badge.copyWith(
+                                            color: AppColors.onTertiaryFixedVariant,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surfaceContainerHigh,
+                                      borderRadius: AppSpacing.borderRadiusPill,
+                                    ),
+                                    child: Text(
+                                      stone.collectionLabel,
+                                      style: AppTypography.badge.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                        fontSize: 9,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              // Specifications Grid
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 6,
+                                children: specs.map((spec) {
+                                  return SizedBox(
+                                    width: 70,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          spec.$1,
+                                          style: AppTypography.labelSm.copyWith(
+                                            color: AppColors.outline,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          spec.$2,
+                                          style: AppTypography.dataMono.copyWith(
+                                            color: AppColors.primary,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'SKU: ${stone.giaReportNumber}',
+                                        style: AppTypography.labelSm.copyWith(
+                                          color: AppColors.outline,
+                                          fontSize: 9,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            GestureDetector(
+                                              onTap: () {
+                                                if (item.quantity > 1) {
+                                                  ref.read(cartProvider.notifier).updateQuantity(stone.id, item.quantity - 1);
+                                                } else {
+                                                  ref.read(cartProvider.notifier).removeItem(stone.id);
+                                                }
+                                              },
+                                              behavior: HitTestBehavior.opaque,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                child: const Icon(Icons.remove, size: 12, color: AppColors.primary),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                                              child: Text(
+                                                '${item.quantity}',
+                                                style: AppTypography.bodyMd.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.primary,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                            GestureDetector(
+                                              onTap: () {
+                                                ref.read(cartProvider.notifier).updateQuantity(stone.id, item.quantity + 1);
+                                              },
+                                              behavior: HitTestBehavior.opaque,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                child: const Icon(Icons.add, size: 12, color: AppColors.primary),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '\$${(stone.price * item.quantity).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+                                        style: AppTypography.titleLg.copyWith(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (item.quantity > 1)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2),
+                                          child: Text(
+                                            '\$${stone.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} each',
+                                            style: AppTypography.labelSm.copyWith(
+                                              color: AppColors.outline,
+                                              fontSize: 9,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+            if (isUpdating)
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: AppSpacing.borderRadiusLg,
+                  child: Container(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -911,7 +951,6 @@ class CartScreen extends ConsumerWidget {
     WidgetRef ref,
     double subtotal,
   ) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
     final escrowFee = subtotal * 0.005;
     final tax = subtotal * 0.03;
     final isShippingFree = subtotal > 20000;
@@ -919,12 +958,14 @@ class CartScreen extends ConsumerWidget {
     final grandTotal = subtotal + escrowFee + tax + shipping;
     final cartCount = ref.watch(cartCountProvider);
 
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.screenPaddingH,
         AppSpacing.sm,
         AppSpacing.screenPaddingH,
-        bottomPadding + AppSpacing.sm,
+        AppSpacing.sm + bottomPadding,
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -945,26 +986,69 @@ class CartScreen extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total Valuation',
-                style: AppTypography.bodyMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isBreakdownExpanded = !_isBreakdownExpanded;
+              });
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Total Valuation',
+                        style: AppTypography.bodyMd.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _isBreakdownExpanded
+                            ? Icons.keyboard_arrow_down_rounded
+                            : Icons.keyboard_arrow_up_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '\$${grandTotal.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+                    style: AppTypography.priceLg.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                '\$${grandTotal.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
-                style: AppTypography.priceLg.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 14),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            child: _isBreakdownExpanded
+                ? Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      _buildSummaryRow('Subtotal ($cartCount items)', subtotal),
+                      const SizedBox(height: 8),
+                      _buildSummaryRow('Insured Shipping', shipping, isShipping: true, isFree: isShippingFree),
+                      const SizedBox(height: 8),
+                      _buildSummaryRow('Estimated Tax', tax),
+                      const SizedBox(height: 8),
+                      _buildSummaryRow('Escrow Fee (0.5%)', escrowFee),
+                      const SizedBox(height: 4),
+                      const Divider(height: 16, thickness: 0.5),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
+          const SizedBox(height: 10),
           GestureDetector(
             onTap: () => context.pushNamed(RouteNames.checkout),
             child: Container(

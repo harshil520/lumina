@@ -50,6 +50,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _focusNode = FocusNode();
   bool _isSearchSaved = false;
   bool _isGridView = true;
+  late SearchFilter _localFilter;
 
   @override
   void initState() {
@@ -228,6 +229,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final searchStateAsync = ref.watch(searchProvider);
+    final canPop = Navigator.of(context).canPop();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -237,25 +239,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        bottomNavigationBar: HomeBottomNavBar(
-          currentIndex: 1,
-          onTap: (index) {
-            if (index == 0) {
-              if (Navigator.of(context).canPop()) {
-                Navigator.of(context).pop();
-              } else {
-                context.go('/');
-              }
-            } else if (index == 2) {
-              context.push('/cart');
-            } else if (index == 3) {
-              context.go('/seller-dashboard');
-            } else if (index == 4) {
-              // Redirect to home and show profile
-              context.go('/?tab=4');
-            }
-          },
-        ),
+        bottomNavigationBar: canPop
+            ? null
+            : HomeBottomNavBar(
+                currentIndex: 1,
+                onTap: (index) {
+                  if (index == 0) {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else {
+                      context.go('/');
+                    }
+                  } else if (index == 2) {
+                    context.go('/cart');
+                  } else if (index == 3) {
+                    context.go('/seller-dashboard');
+                  } else if (index == 4) {
+                    // Navigate to profile screen
+                    context.go('/profile');
+                  }
+                },
+              ),
         body: AmbientGradientBackground.home(
           child: SafeArea(
             bottom: false,
@@ -291,6 +295,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildTopAppBar() {
+    final canPop = Navigator.of(context).canPop();
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
@@ -307,9 +312,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
-            onTap: () => rootScaffoldKey.currentState?.openDrawer(),
-            child: const Icon(
-              Icons.menu_rounded,
+            onTap: () {
+              if (canPop) {
+                context.pop();
+              } else {
+                rootScaffoldKey.currentState?.openDrawer();
+              }
+            },
+            child: Icon(
+              canPop ? Icons.arrow_back_ios_new_rounded : Icons.menu_rounded,
               color: AppColors.primary,
               size: 22,
             ),
@@ -365,192 +376,1057 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Search Input & Save Search
+          // Row 1: Search Input (full width, no Save Search button)
+          Container(
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLow,
+              borderRadius: AppSpacing.borderRadiusLg,
+              border: Border.all(
+                color: _focusNode.hasFocus
+                    ? AppColors.primary.withValues(alpha: 0.3)
+                    : Colors.transparent,
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 16),
+                const Icon(
+                  Icons.search_rounded,
+                  color: AppColors.outline,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _focusNode,
+                    style: AppTypography.bodyMd.copyWith(
+                      color: AppColors.onSurface,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: hintText,
+                      hintStyle: AppTypography.bodySm.copyWith(
+                        color: AppColors.outline.withValues(alpha: 0.6),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => _focusNode.unfocus(),
+                  ),
+                ),
+                if (_searchController.text.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      _searchController.clear();
+                      ref.read(searchProvider.notifier).clearSearch();
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: AppColors.outline,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Row 2: Space-saving Unified Filter & Sort Row
           Row(
             children: [
               Expanded(
-                child: Container(
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerLow,
-                    borderRadius: AppSpacing.borderRadiusLg,
-                    border: Border.all(
-                      color: _focusNode.hasFocus
-                          ? AppColors.primary.withValues(alpha: 0.3)
-                          : Colors.transparent,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 16),
-                      const Icon(
-                        Icons.search_rounded,
-                        color: AppColors.outline,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          focusNode: _focusNode,
-                          style: AppTypography.bodyMd.copyWith(
-                            color: AppColors.onSurface,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: hintText,
-                            hintStyle: AppTypography.bodySm.copyWith(
-                              color: AppColors.outline.withValues(alpha: 0.6),
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          textInputAction: TextInputAction.search,
-                          onSubmitted: (_) => _focusNode.unfocus(),
-                        ),
-                      ),
-                      if (_searchController.text.isNotEmpty)
-                        GestureDetector(
-                          onTap: () {
-                            _searchController.clear();
-                            ref.read(searchProvider.notifier).clearSearch();
-                          },
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 12),
-                            child: Icon(
-                              Icons.close_rounded,
-                              color: AppColors.outline,
-                              size: 18,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Save Search
-              GestureDetector(
-                onTap: _toggleSaveSearch,
-                child: Container(
-                  height: 42,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: _isSearchSaved
-                        ? AppColors.primaryFixed
-                        : Colors.transparent,
-                    borderRadius: AppSpacing.borderRadiusLg,
-                    border: Border.all(
-                      color: _isSearchSaved
-                          ? Colors.transparent
-                          : AppColors.outlineVariant,
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isSearchSaved ? Icons.bookmark : Icons.bookmark_border_rounded,
-                        color: _isSearchSaved ? AppColors.onPrimaryFixed : AppColors.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Save Search',
-                        style: AppTypography.labelSm.copyWith(
-                          color: _isSearchSaved ? AppColors.onPrimaryFixed : AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Category Selector Tabs
-          Row(
-            children: [
-              ('Diamonds', Icons.diamond_rounded),
-              ('Gemstones', Icons.star_rounded),
-              ('Jewelry', Icons.watch_rounded),
-            ].map((cat) {
-              final isSelected = activeCat == cat.$1;
-              return Expanded(
                 child: GestureDetector(
-                  onTap: () {
-                    _searchController.clear();
-                    ref.read(searchProvider.notifier).applyFilter(
-                      SearchFilter(productCategory: cat.$1),
-                    );
-                  },
+                  onTap: () => _showAllFiltersBottomSheet(searchState),
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : Colors.transparent,
+                      color: AppColors.surfaceContainerLow,
                       borderRadius: AppSpacing.borderRadiusMd,
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : AppColors.outlineVariant.withValues(alpha: 0.5),
-                        width: 1,
+                        color: AppColors.outlineVariant.withValues(alpha: 0.4),
                       ),
                     ),
-                    alignment: Alignment.center,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          cat.$2,
-                          size: 14,
-                          color: isSelected ? AppColors.onPrimary : AppColors.primary,
-                        ),
-                        const SizedBox(width: 6),
+                        const Icon(Icons.filter_list_rounded, color: AppColors.primary, size: 16),
+                        const SizedBox(width: 8),
                         Text(
-                          cat.$1,
+                          'FILTERS${_getActiveFiltersCount(searchState.filter) > 0 ? " (${_getActiveFiltersCount(searchState.filter)})" : ""}',
                           style: AppTypography.labelSm.copyWith(
-                            color: isSelected ? AppColors.onPrimary : AppColors.primary,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 12),
-          // Row 2: Filters & Sort Toggle Row
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                ..._buildCategorySpecificFilterChips(searchState),
-                const SizedBox(width: 16),
-                GestureDetector(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
                   onTap: _showSortBottomSheet,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.swap_vert_rounded, color: AppColors.primary, size: 20),
-                      const SizedBox(width: 4),
-                      Text(
-                        'SORT',
-                        style: AppTypography.labelSm.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLow,
+                      borderRadius: AppSpacing.borderRadiusMd,
+                      border: Border.all(
+                        color: AppColors.outlineVariant.withValues(alpha: 0.4),
                       ),
-                    ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(_sortIcon(searchState.filter.sortBy ?? SearchSortBy.relevance), color: AppColors.primary, size: 16),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'SORT: ${(searchState.filter.sortBy ?? SearchSortBy.relevance).label.toUpperCase()}',
+                            style: AppTypography.labelSm.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  int _getActiveFiltersCount(SearchFilter filter) {
+    int count = 0;
+    final category = filter.productCategory;
+    if (category == 'Diamonds') {
+      if (filter.category != null && filter.category != 'Natural') count++;
+      if (filter.cut != null) count++;
+      if (filter.minCarat != null || filter.maxCarat != null) count++;
+      if (filter.minPrice != null || filter.maxPrice != null) count++;
+      if (filter.certification != null) count++;
+    } else if (category == 'Gemstones') {
+      if (filter.gemstoneType != null) count++;
+      if (filter.origin != null) count++;
+      if (filter.treatment != null) count++;
+      if (filter.minCarat != null || filter.maxCarat != null) count++;
+      if (filter.minPrice != null || filter.maxPrice != null) count++;
+    } else if (category == 'Jewelry') {
+      if (filter.jewelryType != null) count++;
+      if (filter.metal != null) count++;
+      if (filter.settingType != null) count++;
+      if (filter.minPrice != null || filter.maxPrice != null) count++;
+    }
+    return count;
+  }
+
+  void _showAllFiltersBottomSheet(SearchState searchState) {
+    _localFilter = searchState.filter;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final category = _localFilter.productCategory;
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.82,
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Column(
+                children: [
+                  // Drag Handle
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Container(
+                      width: 32,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.outlineVariant.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // Header Row
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, color: AppColors.primary),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                        Text(
+                          'FILTERS',
+                          style: GoogleFonts.playfairDisplay(
+                            color: AppColors.primary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setModalState(() {
+                              _localFilter = SearchFilter(productCategory: category);
+                            });
+                          },
+                          child: Text(
+                            'RESET ALL',
+                            style: AppTypography.labelSm.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1, color: AppColors.surfaceContainerHigh),
+                  
+                  // Scrollable Content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildMainCategorySelector(setModalState),
+                          if (category == 'Diamonds') ...[
+                            _buildCategoryToggle(setModalState),
+                            const SizedBox(height: 20),
+                            _buildShapeSelector(setModalState),
+                            const SizedBox(height: 24),
+                            _buildCaratSlider(setModalState),
+                            const SizedBox(height: 20),
+                            _buildPriceSlider(setModalState),
+                            const SizedBox(height: 20),
+                            _buildCertSelector(setModalState),
+                          ] else if (category == 'Gemstones') ...[
+                            _buildGemstoneTypeSelector(setModalState),
+                            const SizedBox(height: 20),
+                            _buildOriginSelector(setModalState),
+                            const SizedBox(height: 20),
+                            _buildTreatmentSelector(setModalState),
+                            const SizedBox(height: 24),
+                            _buildCaratSlider(setModalState),
+                            const SizedBox(height: 20),
+                            _buildPriceSlider(setModalState),
+                          ] else if (category == 'Jewelry') ...[
+                            _buildJewelryTypeSelector(setModalState),
+                            const SizedBox(height: 20),
+                            _buildMetalSelector(setModalState),
+                            const SizedBox(height: 20),
+                            _buildSettingTypeSelector(setModalState),
+                            const SizedBox(height: 24),
+                            _buildPriceSlider(setModalState),
+                          ],
+                          const SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  const Divider(height: 1, color: AppColors.surfaceContainerHigh),
+                  
+                  // Sticky Apply Button
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      12,
+                      20,
+                      MediaQuery.of(context).padding.bottom + 12,
+                    ),
+                    child: GestureDetector(
+                      onTap: () {
+                        ref.read(searchProvider.notifier).applyFilter(_localFilter);
+                        Navigator.of(context).pop();
+                      },
+                      child: Container(
+                        height: 48,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: AppSpacing.borderRadiusDefault,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'APPLY FILTERS',
+                          style: AppTypography.labelSm.copyWith(
+                            color: AppColors.onPrimary,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSheetHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title.toUpperCase(),
+        style: AppTypography.labelSm.copyWith(
+          color: AppColors.primary,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryToggle(StateSetter setModalState) {
+    final isNatural = _localFilter.category?.toLowerCase() != 'lab-grown';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSheetHeader('Origin Type'),
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLow,
+            borderRadius: AppSpacing.borderRadiusMd,
+            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.15)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setModalState(() {
+                      _localFilter = _localFilter.copyWith(category: 'Natural');
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isNatural ? AppColors.primary : Colors.transparent,
+                      borderRadius: AppSpacing.borderRadiusMd,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Natural',
+                      style: AppTypography.labelSm.copyWith(
+                        color: isNatural ? AppColors.onPrimary : AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setModalState(() {
+                      _localFilter = _localFilter.copyWith(category: 'Lab-Grown');
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: !isNatural ? AppColors.primary : Colors.transparent,
+                      borderRadius: AppSpacing.borderRadiusMd,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Lab-Grown',
+                      style: AppTypography.labelSm.copyWith(
+                        color: !isNatural ? AppColors.onPrimary : AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMainCategorySelector(StateSetter setModalState) {
+    final currentCat = _localFilter.productCategory;
+    final categories = ['Diamonds', 'Gemstones', 'Jewelry'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSheetHeader('Product Category'),
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLow,
+            borderRadius: AppSpacing.borderRadiusMd,
+            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.15)),
+          ),
+          child: Row(
+            children: categories.map((cat) {
+              final isSelected = currentCat == cat;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setModalState(() {
+                      _localFilter = SearchFilter(productCategory: cat);
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primary : Colors.transparent,
+                      borderRadius: AppSpacing.borderRadiusMd,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      cat,
+                      style: AppTypography.labelSm.copyWith(
+                        color: isSelected ? AppColors.onPrimary : AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _buildShapeSelector(StateSetter setModalState) {
+    final currentCut = _localFilter.cut;
+    final shapes = [
+      ('All', DiamondShape.all),
+      ('Round', DiamondShape.round),
+      ('Princess', DiamondShape.princess),
+      ('Oval', DiamondShape.oval),
+      ('Cushion', DiamondShape.cushion),
+      ('Pear', DiamondShape.pear),
+      ('Emerald', DiamondShape.emerald),
+      ('Radiant', DiamondShape.radiant),
+      ('Marquise', DiamondShape.marquise),
+      ('Asscher', DiamondShape.asscher),
+      ('Heart', DiamondShape.heart),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSheetHeader('Diamond Shape'),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            childAspectRatio: 0.85,
+          ),
+          itemCount: shapes.length,
+          itemBuilder: (context, index) {
+            final shape = shapes[index];
+            final isSelected = (shape.$1 == 'All' && currentCut == null) || (currentCut == shape.$1);
+            final strokeColor = isSelected ? AppColors.primary : AppColors.outline.withValues(alpha: 0.6);
+            final textColor = isSelected ? AppColors.primary : AppColors.onSurfaceVariant;
+
+            return GestureDetector(
+              onTap: () {
+                setModalState(() {
+                  _localFilter = _localFilter.copyWith(
+                    cut: shape.$1 == 'All' ? null : shape.$1,
+                    clearCut: shape.$1 == 'All',
+                  );
+                });
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.outlineVariant.withValues(alpha: 0.3),
+                    width: isSelected ? 1.5 : 1,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 6),
+                    Expanded(
+                      child: Center(
+                        child: AspectRatio(
+                          aspectRatio: 1.0,
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: CustomPaint(
+                              painter: DiamondShapePainter(
+                                shape: shape.$2,
+                                color: strokeColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        shape.$1,
+                        style: AppTypography.labelSm.copyWith(
+                          color: textColor,
+                          fontSize: 9,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCaratSlider(StateSetter setModalState) {
+    var minCarat = _localFilter.minCarat ?? 0.0;
+    var maxCarat = _localFilter.maxCarat ?? 5.0;
+    var values = RangeValues(minCarat, maxCarat);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSheetHeader('Carat Weight'),
+            Text(
+              '${values.start.toStringAsFixed(2)} - ${values.end.toStringAsFixed(2)} ct',
+              style: AppTypography.dataMono.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        RangeSlider(
+          values: values,
+          min: 0.0,
+          max: 5.0,
+          divisions: 50,
+          activeColor: AppColors.primary,
+          inactiveColor: AppColors.outlineVariant.withValues(alpha: 0.3),
+          labels: RangeLabels(
+            '${values.start.toStringAsFixed(1)} ct',
+            '${values.end.toStringAsFixed(1)} ct',
+          ),
+          onChanged: (newValues) {
+            setModalState(() {
+              _localFilter = _localFilter.copyWith(
+                minCarat: newValues.start,
+                maxCarat: newValues.end,
+              );
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPriceSlider(StateSetter setModalState) {
+    var minPrice = _localFilter.minPrice ?? 0.0;
+    var maxPrice = _localFilter.maxPrice ?? 50000.0;
+    var values = RangeValues(minPrice, maxPrice);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSheetHeader('Price Range'),
+            Text(
+              '\$${values.start.toStringAsFixed(0)} - \$${values.end.toStringAsFixed(0)}',
+              style: AppTypography.dataMono.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        RangeSlider(
+          values: values,
+          min: 0.0,
+          max: 50000.0,
+          divisions: 100,
+          activeColor: AppColors.primary,
+          inactiveColor: AppColors.outlineVariant.withValues(alpha: 0.3),
+          labels: RangeLabels(
+            '\$${values.start.toStringAsFixed(0)}',
+            '\$${values.end.toStringAsFixed(0)}',
+          ),
+          onChanged: (newValues) {
+            setModalState(() {
+              _localFilter = _localFilter.copyWith(
+                minPrice: newValues.start,
+                maxPrice: newValues.end,
+              );
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCertSelector(StateSetter setModalState) {
+    final currentCert = _localFilter.certification;
+    final certs = ['All', 'GIA', 'IGI', 'GRS', 'Gübelin'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSheetHeader('Certification'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: certs.map((cert) {
+            final isSelected = (cert == 'All' && currentCert == null) || (currentCert == cert);
+            return GestureDetector(
+              onTap: () {
+                setModalState(() {
+                  _localFilter = _localFilter.copyWith(
+                    certification: cert == 'All' ? null : cert,
+                    clearCertification: cert == 'All',
+                  );
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : AppColors.surfaceContainerLow,
+                  borderRadius: AppSpacing.borderRadiusPill,
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+                  ),
+                ),
+                child: Text(
+                  cert,
+                  style: AppTypography.labelSm.copyWith(
+                    color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGemstoneTypeSelector(StateSetter setModalState) {
+    final current = _localFilter.gemstoneType;
+    final options = [
+      ('All', null),
+      ('Sapphire', const Color(0xFF0F52BA)),
+      ('Emerald', const Color(0xFF50C878)),
+      ('Ruby', const Color(0xFFE0115F)),
+      ('Tanzanite', const Color(0xFF6F00FF)),
+      ('Garnet', const Color(0xFF8B0000)),
+      ('Aquamarine', const Color(0xFF7FFFD4)),
+      ('Topaz', const Color(0xFFFFC87C)),
+      ('Opal', const Color(0xFFE8DCC8)),
+      ('Pearl', const Color(0xFFFFF8E7)),
+      ('Tourmaline', const Color(0xFFFF6B8A)),
+      ('Citrine', const Color(0xFFE4A010)),
+      ('Peridot', const Color(0xFFABD966)),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSheetHeader('Gemstone Type'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((opt) {
+            final isSelected = (opt.$1 == 'All' && current == null) || (current == opt.$1);
+            return GestureDetector(
+              onTap: () {
+                setModalState(() {
+                  _localFilter = _localFilter.copyWith(
+                    gemstoneType: opt.$1 == 'All' ? null : opt.$1,
+                    clearGemstoneType: opt.$1 == 'All',
+                  );
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : AppColors.surfaceContainerLow,
+                  borderRadius: AppSpacing.borderRadiusPill,
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (opt.$2 != null)
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: opt.$2,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    if (opt.$2 != null) const SizedBox(width: 6),
+                    Text(
+                      opt.$1,
+                      style: AppTypography.labelSm.copyWith(
+                        color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOriginSelector(StateSetter setModalState) {
+    final current = _localFilter.origin;
+    final options = ['All', 'Ceylon', 'Colombia', 'Burma', 'Tanzania', 'Brazil', 'Kenya'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSheetHeader('Gemstone Origin'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((opt) {
+            final isSelected = (opt == 'All' && current == null) || (current == opt);
+            return GestureDetector(
+              onTap: () {
+                setModalState(() {
+                  _localFilter = _localFilter.copyWith(
+                    origin: opt == 'All' ? null : opt,
+                    clearOrigin: opt == 'All',
+                  );
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : AppColors.surfaceContainerLow,
+                  borderRadius: AppSpacing.borderRadiusPill,
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+                  ),
+                ),
+                child: Text(
+                  opt,
+                  style: AppTypography.labelSm.copyWith(
+                    color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTreatmentSelector(StateSetter setModalState) {
+    final current = _localFilter.treatment;
+    final options = [
+      ('All', Icons.grid_view_rounded),
+      ('Unheated', Icons.ac_unit_rounded),
+      ('Heat-Treated', Icons.local_fire_department_rounded),
+      ('Minor Oil', Icons.opacity_rounded),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSheetHeader('Gemstone Treatment'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((opt) {
+            final isSelected = (opt.$1 == 'All' && current == null) || (current == opt.$1);
+            return GestureDetector(
+              onTap: () {
+                setModalState(() {
+                  _localFilter = _localFilter.copyWith(
+                    treatment: opt.$1 == 'All' ? null : opt.$1,
+                    clearTreatment: opt.$1 == 'All',
+                  );
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : AppColors.surfaceContainerLow,
+                  borderRadius: AppSpacing.borderRadiusPill,
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      opt.$2,
+                      size: 14,
+                      color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      opt.$1,
+                      style: AppTypography.labelSm.copyWith(
+                        color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildJewelryTypeSelector(StateSetter setModalState) {
+    final current = _localFilter.jewelryType;
+    final options = ['All', 'Rings', 'Necklaces', 'Earrings', 'Bracelets', 'Pendants', 'Bangles', 'Chains', 'Brooches'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSheetHeader('Jewelry Type'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((opt) {
+            final isSelected = (opt == 'All' && current == null) || (current == opt);
+            return GestureDetector(
+              onTap: () {
+                setModalState(() {
+                  _localFilter = _localFilter.copyWith(
+                    jewelryType: opt == 'All' ? null : opt,
+                    clearJewelryType: opt == 'All',
+                  );
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : AppColors.surfaceContainerLow,
+                  borderRadius: AppSpacing.borderRadiusPill,
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+                  ),
+                ),
+                child: Text(
+                  opt,
+                  style: AppTypography.labelSm.copyWith(
+                    color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetalSelector(StateSetter setModalState) {
+    final current = _localFilter.metal;
+    final options = [
+      ('All', null),
+      ('18k White Gold', const Color(0xFFE8E8E8)),
+      ('18k Yellow Gold', const Color(0xFFFFD700)),
+      ('18k Rose Gold', const Color(0xFFB76E79)),
+      ('Platinum', const Color(0xFFE5E4E2)),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSheetHeader('Metal Type'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((opt) {
+            final isSelected = (opt.$1 == 'All' && current == null) || (current == opt.$1);
+            return GestureDetector(
+              onTap: () {
+                setModalState(() {
+                  _localFilter = _localFilter.copyWith(
+                    metal: opt.$1 == 'All' ? null : opt.$1,
+                    clearMetal: opt.$1 == 'All',
+                  );
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : AppColors.surfaceContainerLow,
+                  borderRadius: AppSpacing.borderRadiusPill,
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (opt.$2 != null)
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: opt.$2,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    if (opt.$2 != null) const SizedBox(width: 6),
+                    Text(
+                      opt.$1,
+                      style: AppTypography.labelSm.copyWith(
+                        color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSettingTypeSelector(StateSetter setModalState) {
+    final current = _localFilter.settingType;
+    final options = [
+      ('All', Icons.grid_view_rounded),
+      ('Solitaire', Icons.diamond_rounded),
+      ('Halo', Icons.flare_rounded),
+      ('Prong', Icons.star_rounded),
+      ('Stud', Icons.circle_outlined),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSheetHeader('Setting Type'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((opt) {
+            final isSelected = (opt.$1 == 'All' && current == null) || (current == opt.$1);
+            return GestureDetector(
+              onTap: () {
+                setModalState(() {
+                  _localFilter = _localFilter.copyWith(
+                    settingType: opt.$1 == 'All' ? null : opt.$1,
+                    clearSettingType: opt.$1 == 'All',
+                  );
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : AppColors.surfaceContainerLow,
+                  borderRadius: AppSpacing.borderRadiusPill,
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      opt.$2,
+                      size: 14,
+                      color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      opt.$1,
+                      style: AppTypography.labelSm.copyWith(
+                        color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -620,7 +1496,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Select Gemstone Shape',
+                  'Select Diamond Shape',
                   style: AppTypography.titleLg.copyWith(
                     fontFamily: 'Playfair Display',
                     color: AppColors.primary,
@@ -1331,211 +2207,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  List<Widget> _buildCategorySpecificFilterChips(SearchState searchState) {
-    final category = searchState.filter.productCategory;
-    final List<Widget> chips = [];
 
-    if (category == 'Diamonds') {
-      final isNatural = searchState.filter.category?.toLowerCase() != 'lab-grown';
-      chips.add(
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceContainer,
-            borderRadius: AppSpacing.borderRadiusPill,
-            border: Border.all(
-              color: AppColors.outlineVariant.withValues(alpha: 0.2),
-            ),
-          ),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  ref.read(searchProvider.notifier).applyFilter(
-                    searchState.filter.copyWith(category: 'Natural'),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isNatural ? AppColors.primary : Colors.transparent,
-                    borderRadius: AppSpacing.borderRadiusPill,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.eco_rounded,
-                        size: 14,
-                        color: isNatural ? AppColors.onPrimary : AppColors.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Natural',
-                        style: AppTypography.labelSm.copyWith(
-                          color: isNatural ? AppColors.onPrimary : AppColors.onSurfaceVariant,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  ref.read(searchProvider.notifier).applyFilter(
-                    searchState.filter.copyWith(category: 'Lab-Grown'),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: !isNatural ? AppColors.primary : Colors.transparent,
-                    borderRadius: AppSpacing.borderRadiusPill,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.science_rounded,
-                        size: 14,
-                        color: !isNatural ? AppColors.onPrimary : AppColors.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Lab-Grown',
-                        style: AppTypography.labelSm.copyWith(
-                          color: !isNatural ? AppColors.onPrimary : AppColors.onSurfaceVariant,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-      chips.add(const SizedBox(width: 8));
-
-      chips.add(
-        _buildFilterChip(
-          label: 'Shape: ${searchState.filter.cut ?? "All"}',
-          onTap: () => _showShapeFilterSheet(searchState),
-          isSelected: searchState.filter.cut != null,
-        ),
-      );
-      chips.add(const SizedBox(width: 8));
-
-      chips.add(
-        _buildFilterChip(
-          label: 'Carat: ${searchState.filter.minCarat != null || searchState.filter.maxCarat != null ? "${searchState.filter.minCarat?.toStringAsFixed(1)} - ${searchState.filter.maxCarat?.toStringAsFixed(1)}" : "All"}',
-          onTap: () => _showCaratFilterSheet(searchState),
-          isSelected: searchState.filter.minCarat != null || searchState.filter.maxCarat != null,
-        ),
-      );
-      chips.add(const SizedBox(width: 8));
-
-      chips.add(
-        _buildFilterChip(
-          label: 'Price: ${searchState.filter.minPrice != null || searchState.filter.maxPrice != null ? "\$${(searchState.filter.minPrice! / 1000).toStringAsFixed(0)}k - \$${(searchState.filter.maxPrice! / 1000).toStringAsFixed(0)}k" : "All"}',
-          onTap: () => _showPriceFilterSheet(searchState),
-          isSelected: searchState.filter.minPrice != null || searchState.filter.maxPrice != null,
-        ),
-      );
-      chips.add(const SizedBox(width: 8));
-
-      chips.add(
-        _buildFilterChip(
-          label: 'Cert: ${searchState.filter.certification ?? "All"}',
-          onTap: () => _showCertFilterSheet(searchState),
-          isSelected: searchState.filter.certification != null,
-        ),
-      );
-    } else if (category == 'Gemstones') {
-      chips.add(
-        _buildFilterChip(
-          label: 'Type: ${searchState.filter.gemstoneType ?? "All"}',
-          onTap: () => _showGemstoneTypeFilterSheet(searchState),
-          isSelected: searchState.filter.gemstoneType != null,
-        ),
-      );
-      chips.add(const SizedBox(width: 8));
-
-      chips.add(
-        _buildFilterChip(
-          label: 'Origin: ${searchState.filter.origin ?? "All"}',
-          onTap: () => _showOriginFilterSheet(searchState),
-          isSelected: searchState.filter.origin != null,
-        ),
-      );
-      chips.add(const SizedBox(width: 8));
-
-      chips.add(
-        _buildFilterChip(
-          label: 'Treatment: ${searchState.filter.treatment ?? "All"}',
-          onTap: () => _showTreatmentFilterSheet(searchState),
-          isSelected: searchState.filter.treatment != null,
-        ),
-      );
-      chips.add(const SizedBox(width: 8));
-
-      chips.add(
-        _buildFilterChip(
-          label: 'Carat: ${searchState.filter.minCarat != null || searchState.filter.maxCarat != null ? "${searchState.filter.minCarat?.toStringAsFixed(1)} - ${searchState.filter.maxCarat?.toStringAsFixed(1)}" : "All"}',
-          onTap: () => _showCaratFilterSheet(searchState),
-          isSelected: searchState.filter.minCarat != null || searchState.filter.maxCarat != null,
-        ),
-      );
-      chips.add(const SizedBox(width: 8));
-
-      chips.add(
-        _buildFilterChip(
-          label: 'Price: ${searchState.filter.minPrice != null || searchState.filter.maxPrice != null ? "\$${(searchState.filter.minPrice! / 1000).toStringAsFixed(0)}k - \$${(searchState.filter.maxPrice! / 1000).toStringAsFixed(0)}k" : "All"}',
-          onTap: () => _showPriceFilterSheet(searchState),
-          isSelected: searchState.filter.minPrice != null || searchState.filter.maxPrice != null,
-        ),
-      );
-    } else if (category == 'Jewelry') {
-      chips.add(
-        _buildFilterChip(
-          label: 'Type: ${searchState.filter.jewelryType ?? "All"}',
-          onTap: () => _showJewelryTypeFilterSheet(searchState),
-          isSelected: searchState.filter.jewelryType != null,
-        ),
-      );
-      chips.add(const SizedBox(width: 8));
-
-      chips.add(
-        _buildFilterChip(
-          label: 'Metal: ${searchState.filter.metal ?? "All"}',
-          onTap: () => _showMetalFilterSheet(searchState),
-          isSelected: searchState.filter.metal != null,
-        ),
-      );
-      chips.add(const SizedBox(width: 8));
-
-      chips.add(
-        _buildFilterChip(
-          label: 'Setting: ${searchState.filter.settingType ?? "All"}',
-          onTap: () => _showSettingFilterSheet(searchState),
-          isSelected: searchState.filter.settingType != null,
-        ),
-      );
-      chips.add(const SizedBox(width: 8));
-
-      chips.add(
-        _buildFilterChip(
-          label: 'Price: ${searchState.filter.minPrice != null || searchState.filter.maxPrice != null ? "\$${(searchState.filter.minPrice! / 1000).toStringAsFixed(0)}k - \$${(searchState.filter.maxPrice! / 1000).toStringAsFixed(0)}k" : "All"}',
-          onTap: () => _showPriceFilterSheet(searchState),
-          isSelected: searchState.filter.minPrice != null || searchState.filter.maxPrice != null,
-        ),
-      );
-    }
-
-    return chips;
-  }
 
   void _showGemstoneTypeFilterSheet(SearchState searchState) {
     showModalBottomSheet(

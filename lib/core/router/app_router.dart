@@ -19,6 +19,8 @@ import '../../features/seller_dashboard/presentation/screens/certification_uploa
 import '../../features/home/presentation/screens/concierge_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../../features/profile/presentation/screens/messages_screen.dart';
+import '../../features/profile/presentation/screens/order_detail_screen.dart';
 import '../../features/profile/presentation/screens/order_list_screen.dart';
 import '../../features/profile/presentation/screens/saved_addresses_screen.dart';
 import '../../features/profile/presentation/screens/payment_methods_screen.dart';
@@ -173,6 +175,14 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const OrderListScreen(),
         ),
         GoRoute(
+          path: '/profile/orders/:id',
+          name: RouteNames.orderDetail,
+          builder: (context, state) {
+            final id = state.pathParameters['id'] ?? '';
+            return OrderDetailScreen(orderId: id);
+          },
+        ),
+        GoRoute(
           path: '/profile/addresses',
           name: RouteNames.addresses,
           builder: (context, state) => const SavedAddressesScreen(),
@@ -181,6 +191,11 @@ final GoRouter appRouter = GoRouter(
           path: '/profile/payment-methods',
           name: RouteNames.paymentMethods,
           builder: (context, state) => const PaymentMethodsScreen(),
+        ),
+        GoRoute(
+          path: '/profile/messages',
+          name: RouteNames.messages,
+          builder: (context, state) => const MessagesScreen(),
         ),
         GoRoute(
           path: '/profile/wishlist',
