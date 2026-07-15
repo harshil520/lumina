@@ -5,12 +5,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 
-/// Split layout: Private Concierge consultation + Exclusive Access newsletter.
+/// Split layout: Raise a Query consultation + Exclusive Access newsletter.
 ///
 /// Two premium cards side-by-side on wide screens, stacked on mobile.
 /// Enhanced with GIVA-inspired gradient styling and premium feel.
-class ConciergeSection extends StatelessWidget {
-  const ConciergeSection({super.key});
+class RaiseQuerySection extends StatelessWidget {
+  const RaiseQuerySection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,7 @@ class ConciergeSection extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _ConciergeCard(),
+          _RaiseQueryCard(),
           const SizedBox(height: 16),
           _NewsletterCard(),
         ],
@@ -29,7 +29,7 @@ class ConciergeSection extends StatelessWidget {
   }
 }
 
-class _ConciergeCard extends StatelessWidget {
+class _RaiseQueryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -43,7 +43,7 @@ class _ConciergeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Private Concierge',
+            'Raise a Query',
             style: AppTypography.headlineLg.copyWith(
               color: AppColors.primary,
               fontSize: 24,
@@ -52,14 +52,14 @@ class _ConciergeCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Seeking a specific rarity or bespoke setting? Our gemologists are available for private consultations.',
+            'Seeking a specific rarity or bespoke setting? Our gemologists are available to answer your questions.',
             style: AppTypography.bodyMd.copyWith(
               color: AppColors.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 24),
           GestureDetector(
-            onTap: () => context.push('/concierge'),
+            onTap: () => context.push('/raise-query'),
             child: Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: 24,
@@ -70,7 +70,7 @@ class _ConciergeCard extends StatelessWidget {
                 borderRadius: AppSpacing.borderRadiusPill,
               ),
               child: Text(
-                'BOOK CONSULTATION',
+                'RAISE A QUERY',
                 style: AppTypography.labelSm.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,

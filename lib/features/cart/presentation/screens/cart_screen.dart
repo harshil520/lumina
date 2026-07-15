@@ -918,12 +918,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Our private gemstone concierge is available for expert guidance.',
+                  'Raise a query for expert guidance on your gemstone purchase.',
                   style: AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant),
                 ),
                 const SizedBox(height: 10),
                 GestureDetector(
-                  onTap: () => context.push('/concierge'),
+                  onTap: () => context.push('/raise-query'),
                   child: Row(
                     children: [
                       Text(

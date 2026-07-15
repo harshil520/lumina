@@ -123,10 +123,10 @@ class AppDrawer extends StatelessWidget {
                 ),
                 _buildDrawerItem(
                   icon: Icons.support_agent_outlined,
-                  title: 'Private Concierge',
+                  title: 'Raise a Query',
                   onTap: () {
                     context.pop();
-                    context.push('/concierge');
+                    context.push('/raise-query');
                   },
                 ),
                 _buildDrawerItem(

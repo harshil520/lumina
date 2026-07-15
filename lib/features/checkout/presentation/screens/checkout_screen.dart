@@ -1454,7 +1454,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Your private concierge is available 24/7 to assist with your acquisition.',
+                          'Your dedicated support team is available 24/7 to assist with your acquisition.',
                           style: AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant, fontSize: 11),
                         ),
                       ],

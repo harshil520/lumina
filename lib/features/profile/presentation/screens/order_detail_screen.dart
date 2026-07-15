@@ -474,7 +474,7 @@ class _ContactSupportSheet extends StatelessWidget {
             subtitle: 'Chat with a gemstone specialist',
             onTap: () {
               Navigator.pop(context);
-              context.pushNamed('concierge');
+              context.pushNamed('raise-query');
             },
           ),
           _SupportTile(

@@ -65,6 +65,14 @@ class SettingsNotifier extends AsyncNotifier<AppSettings> {
     await _applyUpdate((s) => s.copyWith(newsletter: !s.newsletter));
   }
 
+  Future<void> setLanguage(String language) async {
+    await _applyUpdate((s) => s.copyWith(language: language));
+  }
+
+  Future<void> setCurrency(String currency) async {
+    await _applyUpdate((s) => s.copyWith(currency: currency));
+  }
+
   Future<void> toggleBiometricAuth() async {
     await _applyUpdate((s) => s.copyWith(biometricAuth: !s.biometricAuth));
   }

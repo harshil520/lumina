@@ -16,7 +16,7 @@ import '../../features/home/presentation/screens/trending_screen.dart';
 import '../../features/seller_dashboard/presentation/screens/seller_listings_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
 import '../../features/seller_dashboard/presentation/screens/certification_upload_screen.dart';
-import '../../features/home/presentation/screens/concierge_screen.dart';
+import '../../features/home/presentation/screens/raise_query_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/messages_screen.dart';
@@ -134,9 +134,9 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const CertificationUploadScreen(),
         ),
         GoRoute(
-          path: '/concierge',
-          name: RouteNames.concierge,
-          builder: (context, state) => const ConciergeScreen(),
+          path: '/raise-query',
+          name: RouteNames.raiseQuery,
+          builder: (context, state) => const RaiseQueryScreen(),
         ),
         GoRoute(
           path: '/gemstone/:id',

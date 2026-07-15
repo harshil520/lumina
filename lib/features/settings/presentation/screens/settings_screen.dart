@@ -6,6 +6,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../application/settings_providers.dart';
+import '../../domain/models/supported_currency.dart';
+import '../../domain/models/supported_language.dart';
+import '../widgets/preference_selection_sheet.dart';
 
 /// Main settings screen with grouped sections for all app preferences.
 class SettingsScreen extends ConsumerWidget {
@@ -119,14 +122,14 @@ class SettingsScreen extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.language_outlined,
                 title: 'Language',
-                subtitle: settings.language,
-                onTap: () {},
+                subtitle: _languageDisplayName(settings.language),
+                onTap: () => _showLanguageSheet(context, ref, settings.language),
               ),
               _SettingsTile(
                 icon: Icons.attach_money_outlined,
                 title: 'Currency',
-                subtitle: settings.currency,
-                onTap: () {},
+                subtitle: '${settings.currency} — ${_currencyDisplayName(settings.currency)}',
+                onTap: () => _showCurrencySheet(context, ref, settings.currency),
               ),
               const Divider(height: AppSpacing.lg),
               _SectionHeader(title: 'About'),
@@ -158,6 +161,44 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  String _languageDisplayName(String code) {
+    final match = SupportedLanguage.supportedLanguages.where((l) => l.code == code);
+    return match.isNotEmpty ? match.first.name : code;
+  }
+
+  String _currencyDisplayName(String code) {
+    final match = SupportedCurrency.supportedCurrencies.where((c) => c.code == code);
+    return match.isNotEmpty ? match.first.name : code;
+  }
+
+  Future<void> _showLanguageSheet(BuildContext context, WidgetRef ref, String currentCode) {
+    return PreferenceSelectionSheet.show<SupportedLanguage>(
+      context: context,
+      title: 'Select Language',
+      options: SupportedLanguage.supportedLanguages,
+      selectedValue: SupportedLanguage.supportedLanguages.firstWhere(
+        (l) => l.code == currentCode,
+        orElse: () => const SupportedLanguage(code: 'en', name: 'English'),
+      ),
+      labelBuilder: (lang) => lang.name,
+      onSelected: (lang) => ref.read(settingsNotifierProvider.notifier).setLanguage(lang.code),
+    );
+  }
+
+  Future<void> _showCurrencySheet(BuildContext context, WidgetRef ref, String currentCode) {
+    return PreferenceSelectionSheet.show<SupportedCurrency>(
+      context: context,
+      title: 'Select Currency',
+      options: SupportedCurrency.supportedCurrencies,
+      selectedValue: SupportedCurrency.supportedCurrencies.firstWhere(
+        (c) => c.code == currentCode,
+        orElse: () => const SupportedCurrency(code: 'USD', name: 'US Dollar', symbol: r'$'),
+      ),
+      labelBuilder: (currency) => '${currency.symbol}  ${currency.code} — ${currency.name}',
+      onSelected: (currency) => ref.read(settingsNotifierProvider.notifier).setCurrency(currency.code),
     );
   }
 }

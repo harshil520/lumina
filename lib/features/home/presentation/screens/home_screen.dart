@@ -12,7 +12,7 @@ import '../../../../core/widgets/ambient_gradient_background.dart';
 import '../../../../core/widgets/app_shell.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../widgets/category_grid.dart';
-import '../widgets/concierge_section.dart';
+import '../widgets/raise_query_section.dart';
 import '../widgets/featured_collections_carousel.dart';
 import '../widgets/home_bottom_nav_bar.dart';
 import '../widgets/search_bar_widget.dart';
@@ -223,7 +223,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   delay: const Duration(milliseconds: 350),
                   child: const Padding(
                     padding: EdgeInsets.only(top: AppSpacing.md),
-                    child: ConciergeSection(),
+                    child: RaiseQuerySection(),
                   ),
                 ),
               ),

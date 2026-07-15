@@ -17,7 +17,7 @@ class RouteNames {
   static const String sellerListings = 'seller-listings';
   static const String checkout = 'checkout';
   static const String certificationUpload = 'certification-upload';
-  static const String concierge = 'concierge';
+  static const String raiseQuery = 'raise-query';
   static const String profile = 'profile';
   static const String editProfile = 'edit-profile';
   static const String orders = 'orders';

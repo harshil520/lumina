@@ -6,17 +6,17 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/ambient_gradient_background.dart';
 
-/// Screen displaying the Lumina Gems Private Concierge options.
+/// Screen displaying the Lumina Gems Raise a Query options.
 ///
 /// Features a prestige hero section, value bento grid, and interactive inquiry form.
-class ConciergeScreen extends StatefulWidget {
-  const ConciergeScreen({super.key});
+class RaiseQueryScreen extends StatefulWidget {
+  const RaiseQueryScreen({super.key});
 
   @override
-  State<ConciergeScreen> createState() => _ConciergeScreenState();
+  State<RaiseQueryScreen> createState() => _RaiseQueryScreenState();
 }
 
-class _ConciergeScreenState extends State<ConciergeScreen> {
+class _RaiseQueryScreenState extends State<RaiseQueryScreen> {
   final _formKey = GlobalKey<FormState>();
   final _servicesKey = GlobalKey();
   final _formSectionKey = GlobalKey();
@@ -94,7 +94,6 @@ class _ConciergeScreenState extends State<ConciergeScreen> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
@@ -135,7 +134,7 @@ class _ConciergeScreenState extends State<ConciergeScreen> {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(
-                      'PRIVATE CONCIERGE',
+                      'RAISE A QUERY',
                       style: AppTypography.titleLg.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -227,7 +226,7 @@ class _ConciergeScreenState extends State<ConciergeScreen> {
                     borderRadius: AppSpacing.borderRadiusPill,
                   ),
                   child: Text(
-                    'PRIVATE CONCIERGE',
+                    'RAISE A QUERY',
                     style: AppTypography.labelSm.copyWith(
                       color: AppColors.onTertiaryFixed,
                       fontWeight: FontWeight.bold,
@@ -247,7 +246,7 @@ class _ConciergeScreenState extends State<ConciergeScreen> {
                 SizedBox(
                   width: isMobile ? double.infinity : 260,
                   child: Text(
-                    'Lumina’s Private Concierge grants you exclusive access to the world’s most elusive gemstones and bespoke artisan craftsmanship.',
+                    'Lumina\'s expert gemologists are ready to assist you with rare stone inquiries, bespoke commissions, and investment portfolio guidance.',
                     style: AppTypography.bodyMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                       height: 1.5,
@@ -268,7 +267,7 @@ class _ConciergeScreenState extends State<ConciergeScreen> {
                           borderRadius: AppSpacing.borderRadiusSm,
                         ),
                         child: Text(
-                          'REQUEST CONSULTATION',
+                          'RAISE A QUERY',
                           style: AppTypography.labelSm.copyWith(
                             color: AppColors.onPrimary,
                             fontWeight: FontWeight.bold,
@@ -541,7 +540,7 @@ class _ConciergeScreenState extends State<ConciergeScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Your concierge representative will review your request and reach out shortly.',
+                              'A member of our team will review your request and reach out shortly.',
                               style: AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
                               textAlign: TextAlign.center,
                             ),
@@ -679,7 +678,7 @@ class _ConciergeScreenState extends State<ConciergeScreen> {
                                 ),
                               )
                             : Text(
-                                'REQUEST CONSULTATION',
+                                'SUBMIT INQUIRY',
                                 style: AppTypography.labelMd.copyWith(
                                   color: AppColors.onPrimary,
                                   letterSpacing: 1.0,
